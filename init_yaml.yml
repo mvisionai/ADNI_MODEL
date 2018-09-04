@@ -1,0 +1,74 @@
+volume_image_data_generator:
+    train:
+        init:
+            voxelwise_center: True
+            voxel_mean: 0.278
+            voxelwise_normalization: True
+            voxel_bounds:
+                - -1000
+                - 400
+            image_shape:
+                - 96
+                - 96
+                - 96
+            image_resample: False
+            data_augmentation: True
+        flow_from_loader:
+            class_mode: "binary"
+            nb_classes: 1
+            batch_size: 16
+            shuffle: True
+    val:
+        init:
+            voxelwise_center: True
+            voxel_mean: 0.278
+            voxelwise_normalization: True
+            voxel_bounds:
+                - -1000
+                - 400
+            image_shape:
+                - 96
+                - 96
+                - 96
+            image_resample: False
+            data_augmentation: False
+        flow_from_loader:
+            class_mode: "binary"
+            nb_classes: 1
+            batch_size: 1
+            shuffle: False
+    test:
+        init:
+            voxelwise_center: True
+            voxel_mean: 0.278
+            voxelwise_normalization: True
+            voxel_bounds:
+                - -1000
+                - 400
+            image_shape:
+                - 96
+                - 96
+                - 96
+            image_resample: False
+            data_augmentation: False
+        flow_from_loader:
+            class_mode: "binary"
+            nb_classes: 1
+            batch_size: 1
+            shuffle: False
+model:
+    compile:
+        loss: "binary_crossentropy"
+        optimizer: "adam"
+        metrics:
+            - "accuracy"
+    fit_generator:
+        steps_per_epoch: 70
+        epochs: 200
+        validation_steps: 279
+        verbose: 1
+        max_q_size: 100
+    evaluate_generator:
+        steps: 198
+    predict_generator:
+        steps: 198
