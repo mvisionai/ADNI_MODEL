@@ -10,6 +10,7 @@ from tensorflow.python import pywrap_tensorflow
 import  ops as op
 import  time
 import os
+from tensorflow.python import debug as tf_debug
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"]="2"
 
@@ -21,7 +22,7 @@ class Main_run(Dataset_Import):
         self.now = datetime.now()
         self.training_epoch = 50
         self.auto_encode_epoch = 10
-        self.batch_size = 3
+        self.batch_size = 1
         self.validation_interval = 20
         self.dropout_prob = 0.60
         self.learn_rate_auto = 0.001
@@ -74,6 +75,11 @@ class Main_run(Dataset_Import):
         merged_summary = tf.summary.merge_all()
 
         with tf.Session() as encoder_sess:
+
+            # encoder_sess = tf_debug.TensorBoardDebugWrapperSession(
+            #     encoder_sess, "http://LAPTOP-P0RH6OCI:6006"
+            # )
+
             sum_writer=tf.summary.FileWriter(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "summaries\\auto"),encoder_sess.graph)
             encoder_sess.run(tf.global_variables_initializer())
             #self.training_epoch
@@ -84,7 +90,7 @@ class Main_run(Dataset_Import):
             for encoder_epoch in range(10):
 
               start_time = time.time()
-              for i in range(4):
+              for i in range(20):
 
                     input_feed= self.next_batch_combined_encoder(self.batch_size)
 
@@ -109,7 +115,7 @@ class Main_run(Dataset_Import):
             self.auto_shuffling_state=False
             self.shu_control_state=False
 
-
+        exit(1)
         tf.reset_default_graph()
 
         g2 = tf.Graph()
