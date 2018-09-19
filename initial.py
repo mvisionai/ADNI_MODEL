@@ -1,17 +1,32 @@
 import tensorflow as tf
 
 
-with tf.variable_scope("ch"):
-  v = tf.get_variable("v", shape=[1], initializer=tf.constant_initializer(1), dtype=tf.float32,trainable=True)
-  cg=tf.Variable(2,name="vb", dtype=tf.float32)
-  fin=v+cg
+def generator(sequence_type):
+    if sequence_type == 1:
+        for i in range(5):
+            yield 10 + i
+    elif sequence_type == 2:
+        for i in range(5):
+            yield (30 + 3 * i, 60 + 2 * i)
+    elif sequence_type == 3:
+        for i in range(1, 4):
+            yield (i, ['Hi'] * i)
 
-with tf.Session() as ses:
- ses.run(tf.global_variables_initializer())
- with tf.variable_scope("ch", reuse=True):
-    new_v=tf.get_variable('v', trainable=False)
-    print(new_v)
-    ses.run(new_v.assign([3]))
-    df=ses.run(fin,feed_dict={cg:5})
 
- print(df)
+
+sec=("ml,dp","love,like")
+lists=(i.split(",") for i in sec)
+
+for j in lists:
+    print(j)
+
+value=generator(2)
+for i in value:
+  print(i)
+
+
+# dataset=tf.data.Dataset.from_generator(generator, (tf.float32), args = ([1]))
+#
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#     print(sess.run(dataset))

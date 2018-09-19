@@ -579,45 +579,45 @@ class Dataset_Import(object):
         r = requests.get('https://frightanic.com/goodies_content/docker-names.php')
         print(r.text.rstrip())
 
-if __name__=="__main__"    :
-
-   try:
-        dataset_feed=Dataset_Import()
-       # print(dataset_feed.target_validation_data())
-        #dataset_feed.load_dataset()
-        #dataset_feed.sample_yaml()
-        #dataset_feed.url_requests()
-        lens=int(len(dataset_feed.source_validation_data())/5)
-        lent=int(len(dataset_feed.target_validation_data())/5)
-        maxc=max(lens,lent)
-
-        print(lens,lent,maxc)
-
-        #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
-        #dataset_feed.statistics()
-        #dataset_feed.show_image()
-        #dataset_feed.statistics()
-        #dataset_feed.cnn_layer()
-        #dataset_feed.save_training_data()
-        #dataset_feed.all_training_data()
-        #print(dataset_feed. convert_validation_source_data()[1])
-        #print("te", dataset_feed.source_target_combined_2()[:, 0][:2])
-        #print("tr",dataset_feed.source_target_combined()[:,0][:2])
-
-
-        #print(dataset_feed.next_batch_source(5))
-        # i=0
-        # for data in dataset_feed.all_target_data():
-        #     print(data[0])
-        #     data=dataset_feed.convert_nii_to_image_data(data[0])
-        #     i=i+1
-        #     print(i)
-
-
-
-
-   except Exception as ex:
-       print(ex)
-
-
-
+# if __name__=="__main__"    :
+#
+#    try:
+#         dataset_feed=Dataset_Import()
+#        # print(dataset_feed.target_validation_data())
+#         #dataset_feed.load_dataset()
+#         #dataset_feed.sample_yaml()
+#         #dataset_feed.url_requests()
+#         lens=int(len(dataset_feed.source_validation_data())/5)
+#         lent=int(len(dataset_feed.target_validation_data())/5)
+#         maxc=max(lens,lent)
+#
+#         print(lens,lent,maxc)
+#
+#         #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
+#         #dataset_feed.statistics()
+#         #dataset_feed.show_image()
+#         #dataset_feed.statistics()
+#         #dataset_feed.cnn_layer()
+#         #dataset_feed.save_training_data()
+#         #dataset_feed.all_training_data()
+#         #print(dataset_feed. convert_validation_source_data()[1])
+#         #print("te", dataset_feed.source_target_combined_2()[:, 0][:2])
+#         #print("tr",dataset_feed.source_target_combined()[:,0][:2])
+#
+#
+#         #print(dataset_feed.next_batch_source(5))
+#         # i=0
+#         # for data in dataset_feed.all_target_data():
+#         #     print(data[0])
+#         #     data=dataset_feed.convert_nii_to_image_data(data[0])
+#         #     i=i+1
+#         #     print(i)
+#
+#
+#
+#
+#    except Exception as ex:
+#        print(ex)
+#
+#
+#
