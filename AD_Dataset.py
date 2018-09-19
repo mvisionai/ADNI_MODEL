@@ -24,6 +24,8 @@ class Dataset_Import(object):
         self.training_part=constants.training_frac
 
         self.i = 0
+        self.valid_source=0
+        self.valid_target=0
         self.auto_shuffling_state=False
         self.trainer_shuffling_state = False
         self.train_ad_fnames = None
@@ -450,9 +452,12 @@ class Dataset_Import(object):
         datas =[self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
         return datas
 
-    def convert_validation_source_data(self):
-        data =self.source_validation_data()
-        data=self.shuffle(data)
+    def convert_validation_source_data(self,batch_size):
+
+        batch_data =self.source_validation_data()[self.valid_source:self.valid_source + batch_size]
+        data=self.shuffle(batch_data)
+
+        self.valid_source = (self.valid_source + batch_size) % len(self.source_validation_data())
 
         if len(self.img_shape_tuple) == 2:
             return np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(
@@ -465,10 +470,14 @@ class Dataset_Import(object):
         #datas = [self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
 
 
-    def convert_validation_target_data(self):
-        data =self.target_validation_data()
-        data = self.shuffle(data)
+    def convert_validation_target_data(self,batch_size):
+
+        batch_data = self.target_validation_data()[self.valid_target:self.valid_target + batch_size]
+        data = self.shuffle(batch_data)
         #datas = [self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
+
+        self.valid_target = (self.valid_target + batch_size) % len(self.target_validation_data())
+
         if  len(self.img_shape_tuple)==2:
             return np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(data),self.encode_domain_labels(data)
 
@@ -574,10 +583,17 @@ if __name__=="__main__"    :
 
    try:
         dataset_feed=Dataset_Import()
-        print(dataset_feed.target_validation_data())
+       # print(dataset_feed.target_validation_data())
         #dataset_feed.load_dataset()
         #dataset_feed.sample_yaml()
         #dataset_feed.url_requests()
+        lens=int(len(dataset_feed.source_validation_data())/5)
+        lent=int(len(dataset_feed.target_validation_data())/5)
+        maxc=max(lens,lent)
+
+        print(lens,lent,maxc)
+
+        #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
         #dataset_feed.statistics()
         #dataset_feed.show_image()
         #dataset_feed.statistics()
