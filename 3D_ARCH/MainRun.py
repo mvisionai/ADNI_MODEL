@@ -7,7 +7,7 @@ from AD_Dataset import  Dataset_Import
 import AD_Constants as constant
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 from tensorflow.python import pywrap_tensorflow
-import  ops as op
+import Model_linker as op_linker
 import  time
 import os
 
@@ -81,10 +81,10 @@ class Main_run(Dataset_Import):
             print("Autoencoder Pretraining ...",end="\n")
 
 
-            for encoder_epoch in range(self.auto_encode_epoch):
+            for encoder_epoch in range(2):
 
               start_time = time.time()
-              for i in range(total_batch_auto):
+              for i in range(2):
 
                     input_feed= self.next_batch_combined_encoder(self.batch_size)
 
@@ -163,16 +163,16 @@ class Main_run(Dataset_Import):
             reader = pywrap_tensorflow.NewCheckpointReader(latest_ckp )
             var_to_shape_map = reader.get_variable_to_shape_map()
             #load autoencoder pretrained weights and biase
-            op.load_initial_weights(tr_sess,var_to_shape_map,use_pretrain=True)
+            op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
 
             print(" ",end="\n")
             print("Initializing Class Training")
 
 
-            for epoch in range(self.training_epoch):
+            for epoch in range(2):
 
               start_time_2=time.time()
-              for i in range(total_batch):
+              for i in range(2):
 
                     data_feed, data_label, label_domain = self.next_batch_combined(self.batch_size)
 
@@ -207,6 +207,7 @@ class Main_run(Dataset_Import):
             len_svalidation = int(len(self.source_validation_data()) /self.batch_size)
             len_tvalidation = int(len(self.target_validation_data()) /self.batch_size)
             max_iteration = max(len_svalidation,len_tvalidation)
+            tf.range
 
             for steps in range(max_iteration) :
 
