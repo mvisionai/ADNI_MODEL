@@ -250,9 +250,9 @@ class Main_run(Dataset_Import):
 
 if __name__ == '__main__':
 
-  #try:
+  try:
     run_train=Main_run()
     run_train.train()
 
-  #except Exception as ex:
-   # print("Exeception caught ",ex)
+  except Exception as ex:
+    print("Exeception caught ",ex)
