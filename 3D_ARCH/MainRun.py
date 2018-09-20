@@ -7,7 +7,7 @@ from AD_Dataset import  Dataset_Import
 import AD_Constants as constant
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 from tensorflow.python import pywrap_tensorflow
-import  ops as op
+import ops as op_linker
 import  time
 import os
 
@@ -20,8 +20,8 @@ class Main_run(Dataset_Import):
         super().__init__()
         self.now = datetime.now()
         self.training_epoch = 50
-        self.auto_encode_epoch = 10
-        self.batch_size = 3
+        self.auto_encode_epoch = 50
+        self.batch_size = 1
         self.validation_interval = 20
         self.dropout_prob = 0.60
         self.learn_rate_auto = 0.001
@@ -81,12 +81,13 @@ class Main_run(Dataset_Import):
             print("Autoencoder Pretraining ...",end="\n")
 
 
-            for encoder_epoch in range(10):
+            for encoder_epoch in range(2):
 
               start_time = time.time()
-              for i in range(4):
+              for i in range(2):
 
-                    input_feed= self.next_batch_combined_encoder(self.batch_size)
+                    feed=self.next_batch_combined_encoder(self.batch_size);
+                    input_feed= [i for i in feed]
 
                     auto_encode_feed_dict = {inputs:input_feed,learning_rate: self.learn_rate_auto,dropout_keep_prob:self.dropout_prob}
                     _,encoder_loss,summary_out=encoder_sess.run([train_autoencode,autoencoder_loss,merged_summary],feed_dict=auto_encode_feed_dict)
@@ -163,18 +164,25 @@ class Main_run(Dataset_Import):
             reader = pywrap_tensorflow.NewCheckpointReader(latest_ckp )
             var_to_shape_map = reader.get_variable_to_shape_map()
             #load autoencoder pretrained weights and biase
-            op.load_initial_weights(tr_sess,var_to_shape_map,use_pretrain=True)
+            op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
 
             print(" ",end="\n")
             print("Initializing Class Training")
 
 
-            for epoch in range(10):
+            for epoch in range(2):
 
               start_time_2=time.time()
-              for i in range(4):
+              for i in range(2):
 
-                    data_feed, data_label, label_domain = self.next_batch_combined(self.batch_size)
+                    source_feed=self.next_batch_combined(self.batch_size)
+
+                    data_source = [data for data in source_feed]
+                    data_source = np.array(data_source)
+                    data_feed=list(data_source[0:, 0])
+                    data_label=list(data_source[0:, 1])
+                    label_domain =list(data_source[0:, 2])
+
 
                     feed_dict_source_batch = {inputs: data_feed, labels: data_label,
                                               dropout_keep_prob: self.dropout_prob,
@@ -185,6 +193,8 @@ class Main_run(Dataset_Import):
 
               tr_writer.add_summary(summary_out2,epoch)
 
+
+
               end_time_2 = time.time()
               print(" ",end="\n")
               print("Epoch " + str(epoch + 1) + " completed : Time usage " + str(int(end_time_2 - start_time_2)) + " seconds")
@@ -192,6 +202,7 @@ class Main_run(Dataset_Import):
               print("Training class_accuracy: {0:.3f}".format(acc_source_batch))
               print("Training domain_loss: {:.5f}".format(loss_domain))
               print("Training domain_accuracy: {0:.3f}".format(accuracy_domain))
+
               #print("label ",data_label)
               #print("logit ",acc_log)
               self.trainer_shuffling_state = True
@@ -199,39 +210,64 @@ class Main_run(Dataset_Import):
               self.set_epoch =epoch
               self.i=0
 
+              # validation batch
+
+            len_svalidation = int(len(self.source_validation_data()) /self.batch_size)
+            len_tvalidation = int(len(self.target_validation_data()) /self.batch_size)
+            max_iteration = max(len_svalidation,len_tvalidation)
+            tf.range
+
+            for steps in range(max_iteration) :
 
 
-            validation_source_dataset, valid_source_label, valid_source_d_label = self.convert_validation_source_data()
-            validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
+                  if steps==len_svalidation-1:
+                      self.valid_source=0
 
-            acc_source_valid = tr_sess.run(accuracy,
-                                                feed_dict={inputs: validation_source_dataset,
-                                                labels: valid_source_label,
-                                                dropout_keep_prob: 1.0})
+                  vsource_feed= self.convert_validation_source_data(self.batch_size)
+                  vtarget_feed=self.convert_validation_target_data(self.batch_size)
 
-            acc_target_valid = tr_sess.run(accuracy,
-                                          feed_dict={inputs: validation_target_dataset,
-                                                     labels:valid_target_label,
-                                                     dropout_keep_prob: 1.0})
+                  data_vsource = [data for data in vsource_feed]
+                  data_vsource = np.array(data_vsource)
+                  validation_source_dataset = list(data_vsource[0:, 0])
+                  valid_source_label = list(data_vsource[0:, 1])
+                  valid_source_d_label = list(data_vsource[0:, 2])
 
-            valid_data_feed = np.vstack([validation_source_dataset, validation_target_dataset])
-            valid_data_label = np.vstack([valid_source_label, valid_target_label])
-            valid_data_d_label = np.vstack([valid_source_d_label, valid_target_d_label])
-
-            validation_accuracy,acc_domain = tr_sess.run([accuracy,domain_accuracy],
-                                            feed_dict={inputs: valid_data_feed,
-                                                       labels: valid_data_label,
-                                                       dropout_keep_prob: 1.0,domain_label:valid_data_d_label, flip_grad: 0})
+                  data_vtarget = [datav for datav in vtarget_feed]
+                  data_vtarget = np.array(data_vtarget)
+                  validation_target_dataset = list(data_vtarget[0:, 0])
+                  valid_target_label = list(data_vtarget[0:, 1])
+                  valid_target_d_label = list(data_vtarget[0:, 2])
 
 
-            print(" ", end="\n")
-            print("-------Validation----------", end="\n")
-            print("Validation   accuracy: {0:.2f}".format(validation_accuracy))
-            print("Validation source  accuracy: {0:.2f}".format(acc_source_valid))
-            print("Validation target  accuracy: {0:.2f}".format(acc_target_valid))
-            print("Validation domain  accuracy: {0:.2f}".format(acc_domain))
 
+                  acc_source_valid = tr_sess.run(accuracy,
+                                                 feed_dict={inputs: validation_source_dataset,
+                                                            labels: valid_source_label,
+                                                            dropout_keep_prob: 1.0})
 
+                  acc_target_valid = tr_sess.run(accuracy,
+                                                 feed_dict={inputs: validation_target_dataset,
+                                                            labels: valid_target_label,
+                                                            dropout_keep_prob: 1.0})
+
+                  valid_data_feed = np.vstack([validation_source_dataset, validation_target_dataset])
+                  valid_data_label = np.vstack([valid_source_label, valid_target_label])
+                  valid_data_d_label = np.vstack([valid_source_d_label, valid_target_d_label])
+
+                  validation_accuracy, acc_domain = tr_sess.run([accuracy, domain_accuracy],
+                                                                feed_dict={inputs: valid_data_feed,
+                                                                           labels: valid_data_label,
+                                                                           dropout_keep_prob: 1.0,
+                                                                           domain_label: valid_data_d_label, flip_grad: 0})
+
+                  print(" ", end="\n")
+                  print("-------Validation ",steps+1,"----------", end="\n")
+                  print("Validation   accuracy: {0:.2f}".format(validation_accuracy))
+                  print("Validation source  accuracy: {0:.2f}".format(acc_source_valid))
+                  print("Validation target  accuracy: {0:.2f}".format(acc_target_valid))
+                  print("Validation domain  accuracy: {0:.2f}".format(acc_domain))
+
+                  # end of validation batch
 
 
 if __name__ == '__main__':
@@ -241,4 +277,7 @@ if __name__ == '__main__':
     run_train.train()
 
   #except Exception as ex:
-   # print("Exeception caught ",ex)
+    #print("Exeception caught ",ex)
+
+
+

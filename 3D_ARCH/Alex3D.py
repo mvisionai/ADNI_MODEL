@@ -41,13 +41,13 @@ def inference(inputs, dropout_keep_prob, label_cnt):
     with tf.variable_scope("convolution"):
             with tf.variable_scope('conv1layer'):
                 conv1 = op.conv(inputs, 7, 96, 3)   # (input data, kernel size, #output channels, stride_size)
-                conv1 = op.lrn(conv1)
+                #conv1 = op.lrn(conv1)
                 conv1 = tf.nn.max_pool3d(conv1, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
             # conv layer 2
             with tf.variable_scope('conv2layer'):
                 conv2 = op.conv(conv1, 5, 256, 1, 0.1)
-                conv2 = op.lrn(conv2)
+                #conv2 = op.lrn(conv2)
                         
                 conv2 = tf.nn.max_pool3d(conv2, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
@@ -82,6 +82,7 @@ def inference(inputs, dropout_keep_prob, label_cnt):
 
             # fc layer 3 - output
             with tf.variable_scope('fc3layer'):
+                print(" ",end="\n")
                 print("Graph Built")
                 final_layer=op.fc(fc2, label_cnt, 0.1,activation_func=tf.nn.softmax)
                 return final_layer

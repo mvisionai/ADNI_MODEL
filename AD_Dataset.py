@@ -24,6 +24,8 @@ class Dataset_Import(object):
         self.training_part=constants.training_frac
 
         self.i = 0
+        self.valid_source=0
+        self.valid_target=0
         self.auto_shuffling_state=False
         self.trainer_shuffling_state = False
         self.train_ad_fnames = None
@@ -375,13 +377,16 @@ class Dataset_Import(object):
         self.i = (self.i + batch_size) % len(self.source_target_combined())
 
         if len(self.img_shape_tuple) == 2:
-            data_set = np.resize(self.convert_batch_to_img_data(batch_data),
-                                 (batch_size, self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_channel))
+
+           for c in range(batch_size):
+
+             yield np.resize(self.convert_batch_to_img_data(batch_data[c]),
+                                 (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_channel))
         elif len(self.img_shape_tuple) == 3:
-            data_set = np.resize(self.convert_batch_to_img_data(batch_data), (
-            batch_size, self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_shape_tuple[2], self.img_channel))
-        # print('Training set',data_set.shape, label.shape)
-        return data_set
+
+           for c in range(batch_size):
+             yield np.resize(self.convert_batch_to_img_data(batch_data[c]), (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_shape_tuple[2], self.img_channel))
+
 
     def next_batch_combined(self,batch_size):
         # Note that the  dimension in the reshape call is set by an assumed batch size set
@@ -389,22 +394,20 @@ class Dataset_Import(object):
         self.set_random_seed(None)
         batch_data = self.shuffle(batch_data)
 
-        #print("consistency ", batch_data)
-
-        label = self.all_source_labels(batch_data)
-        domain_label = self.encode_domain_labels(batch_data)
 
         # print("from ",self.i," to ",self.i + batch_size)
         self.i = (self.i + batch_size) % len(self.source_target_combined_2())
 
         if len(self.img_shape_tuple) == 2:
-            data_set = np.resize(self.convert_batch_to_img_data(batch_data),
-                                 (batch_size, self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_channel))
+            for c in range(batch_size):
+                 yield np.resize(self.convert_batch_to_img_data(batch_data[c]),
+                                 (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_channel)),self.all_source_labels(batch_data[c]),self.encode_domain_labels(batch_data[c])
         elif len(self.img_shape_tuple) == 3:
-            data_set = np.resize(self.convert_batch_to_img_data(batch_data), (
-            batch_size, self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_shape_tuple[2], self.img_channel))
-        # print('Training set',data_set.shape, label.shape)
-        return data_set, label, domain_label
+            for c in range(batch_size):
+                 yield np.resize(self.convert_batch_to_img_data(batch_data[c]),
+                                (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_shape_tuple[2], self.img_channel)),self.all_source_labels(batch_data[c]),self.encode_domain_labels(batch_data[c])
+
+
 
     def next_batch_target(self, batch_size):
         # Note that the  dimension in the reshape call is set by an assumed batch size set
@@ -427,14 +430,14 @@ class Dataset_Import(object):
     def all_source_labels(self, batch_data):
         data=batch_data
         col = 1
-        encoded_label = self.one_hot_encode(np.hstack([ int(data[i][col]) for i in range(len(data))]),3)
-        return encoded_label
+        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]),3)
+        return encoded_label[0]
 
     def encode_domain_labels(self,batch_data):
         data = batch_data
         col = 2
-        encoded_label = self.one_hot_encode(np.hstack([int(data[i][col]) for i in range(len(data))]),2)
-        return encoded_label
+        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]),2)
+        return encoded_label[0]
 
     def all_encoded_labels(self, batch_data):
         data= batch_data
@@ -447,34 +450,46 @@ class Dataset_Import(object):
     def convert_batch_to_img_data(self, batch_data):
         data = batch_data
         col = 0
-        datas =[self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
+        datas =[self.convert_nii_to_image_data(data[col])]
+
         return datas
 
-    def convert_validation_source_data(self):
-        data =self.source_validation_data()
-        data=self.shuffle(data)
+    def convert_validation_source_data(self,batch_size):
+
+        batch_data =self.source_validation_data()[self.valid_source:self.valid_source + batch_size]
+        data=self.shuffle(batch_data)
+
+        self.valid_source = (self.valid_source + batch_size) % len(self.source_validation_data())
 
         if len(self.img_shape_tuple) == 2:
-            return np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(
-                data), self.encode_domain_labels(data)
+          for c in range(batch_size):
+            yield np.resize(self.convert_batch_to_img_data(data[c]),(self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(
+                data[c]), self.encode_domain_labels(data[c])
 
         elif len(self.img_shape_tuple) == 3:
-            return np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_shape_tuple[2],self.img_channel)), self.all_source_labels(
-                data), self.encode_domain_labels(data)
+          for c in range(batch_size):
+             yield np.resize(self.convert_batch_to_img_data(data[c]), (self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_shape_tuple[2],self.img_channel)), self.all_source_labels(
+                data[c]), self.encode_domain_labels(data[c])
 
         #datas = [self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
 
 
-    def convert_validation_target_data(self):
-        data =self.target_validation_data()
-        data = self.shuffle(data)
+    def convert_validation_target_data(self,batch_size):
+
+        batch_data = self.target_validation_data()[self.valid_target:self.valid_target + batch_size]
+        data = self.shuffle(batch_data)
         #datas = [self.convert_nii_to_image_data(data[i][col]) for i in range(len(data))]
+
+        self.valid_target = (self.valid_target + batch_size) % len(self.target_validation_data())
+
         if  len(self.img_shape_tuple)==2:
-            return np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(data),self.encode_domain_labels(data)
+            for c in range(batch_size):
+               yield np.resize(self.convert_batch_to_img_data(data[c]), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_channel)), self.all_source_labels(data[c]),self.encode_domain_labels(data[c])
 
         elif len( self.img_shape_tuple)==3:
-           return  np.resize(self.convert_batch_to_img_data(data), (len(data),self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_shape_tuple[2],self.img_channel)), self.all_source_labels(
-                data), self.encode_domain_labels(data)
+            for c in range(batch_size):
+               yield  np.resize(self.convert_batch_to_img_data(data[c]),(self.img_shape_tuple[0],self.img_shape_tuple[1],self.img_shape_tuple[2],self.img_channel)), self.all_source_labels(
+                  data[c]), self.encode_domain_labels(data[c])
 
 
 
@@ -570,16 +585,53 @@ class Dataset_Import(object):
         r = requests.get('https://frightanic.com/goodies_content/docker-names.php')
         print(r.text.rstrip())
 
-# if __name__=="__main__"    :
-#
-#    try:
-#         dataset_feed=Dataset_Import()
-#         print(dataset_feed.target_validation_data())
-#         #print("te", dataset_feed.source_target_combined_2()[:, 0][:2])
-#         #print("tr",dataset_feed.source_target_combined()[:,0][:2])
-#
-#    except Exception as ex:
-#        print(ex)
+if __name__=="__main__"    :
+
+   #try:
+        dataset_feed=Dataset_Import()
+       # print(dataset_feed.target_validation_data())
+        #dataset_feed.load_dataset()
+        #dataset_feed.sample_yaml()
+        #dataset_feed.url_requests()
+        #lens=int(len(dataset_feed.source_validation_data())/5)
+        #lent=int(len(dataset_feed.target_validation_data())/5)
+        #maxc=max(lens,lent)
+
+        #print(lens,lent,maxc)
+
+        feed=dataset_feed.next_batch_combined(3)
+        data_feed = [dlabel for dlabel in feed]
+        data_feed = np.array(data_feed)
+        print(list(data_feed[0:, 0]))
+
+
+
+
+        #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
+        #dataset_feed.statistics()
+        #dataset_feed.show_image()
+        #dataset_feed.statistics()
+        #dataset_feed.cnn_layer()
+        #dataset_feed.save_training_data()
+        #dataset_feed.all_training_data()
+        #print(dataset_feed. convert_validation_source_data()[1])
+        #print("te", dataset_feed.source_target_combined_2()[:, 0][:2])
+        #print("tr",dataset_feed.source_target_combined()[:,0][:2])
+
+
+        #print(dataset_feed.next_batch_source(5))
+        # i=0
+        # for data in dataset_feed.all_target_data():
+        #     print(data[0])
+        #     data=dataset_feed.convert_nii_to_image_data(data[0])
+        #     i=i+1
+        #     print(i)
+
+
+
+
+  # except Exception as ex:
+      # print(ex)
 
 
 
