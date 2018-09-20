@@ -81,10 +81,10 @@ class Main_run(Dataset_Import):
             print("Autoencoder Pretraining ...",end="\n")
 
 
-            for encoder_epoch in range(2):
+            for encoder_epoch in range(self.auto_encode_epoch):
 
               start_time = time.time()
-              for i in range(2):
+              for i in range(total_batch_auto):
 
                     feed=self.next_batch_combined_encoder(self.batch_size);
                     input_feed= [i for i in feed]
@@ -170,10 +170,10 @@ class Main_run(Dataset_Import):
             print("Initializing Class Training")
 
 
-            for epoch in range(2):
+            for epoch in range(self.training_epoch):
 
               start_time_2=time.time()
-              for i in range(2):
+              for i in range(total_batch):
 
                     source_feed=self.next_batch_combined(self.batch_size)
 
