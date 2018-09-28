@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.contrib.keras.python.keras import backend as K
 import ops as op
 from flip_gradient import flip_gradient
-
+import  numpy as np
 
 shape_to_return=None
 d_W_fc0=None
@@ -96,58 +96,62 @@ def autoencoder(inputs,batch_size):
 
      #scope.reuse_variables()
         # encoder
+     print("shape 1",inputs.shape)
      with tf.variable_scope('conv1layer'):
         #print("Main", inputs.shape)
-        net = op.conv(inputs, 7, 96, 3)
-
-        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
-        #print("shape 1",net.shape)
+        net = op.conv(inputs, 2, 96, 2)  #3
+        #net = tf.nn.max_pool3d(net, ksize=[1, 6, 6, 6, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
+        #print("check ", net.shap # e)
+        print("shape 1",net.shape)
 
      with tf.variable_scope('conv2layer'):
-        net = op.conv(net, 5, 256, 1)
-        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
-        #print("shape 2", net.shape)
+        net = op.conv(net, 2, 256, 2)
+        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
+        print("shape 2", net.shape)
 
      with tf.variable_scope('conv3layer'):
-        net = op.conv(net, 3, 384, 1)
-        #print("shape 3", net.shape)
+        net = op.conv(net, 2, 384, 2)
+        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID') #tuned
+        print("shape 3", net.shape)
 
      with tf.variable_scope('conv4layer'):
-        net = op.conv(net, 3, 384, 1)
-        #print("shape 4", net.shape)
+        net = op.conv(net, 2, 384, 2)
+        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID') #tuned
+        print("shape 4", net.shape)
 
      with tf.variable_scope('conv5layer'):
-        net = op.conv(net, 3, 256, 1)
-
-        #net = tf.nn.max_pool3d(net, ksize=[1, 3, 3, 3, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
-        #print("shape 5", net.shape)
-
-
+        net = op.conv(net, 2, 256, 2)
+        #print(np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])*28/ 3074)
+        #net = tf.nn.max_pool3d(net, ksize=[1, 3, 3, 3, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
+        print("shape 5", net.shape)
 
         # decoder
      with tf.variable_scope('decon1layer'):
-        net = op.deconv(net,3, 384,1,batch_size)
+        net =op.deconv(net,2, 384,2,batch_size)
+        print("check ", net.shape)
 
 
      with tf.variable_scope('decon2layer'):
-        net = op.deconv(net,3, 384,1,batch_size)
+        net = op.deconv(net,2, 384,2,batch_size)
+        print("check ", net.shape)
 
      with tf.variable_scope('decon3layer'):
 
-        net = op.deconv(net, 2, 256, 1, batch_size, conv_padding='VALID')  # for max pooling
-        net = op.deconv(net,5, 256, 1,batch_size)
-
+        net = op.deconv(net, 2, 256, 2, batch_size)  # for max pooling , conv_padding='VALID'
+        #net = op.deconv(net,5, 256, 1,batch_size)
+        print("check ", net.shape)
 
      with tf.variable_scope('decon4layer'):
-        net = op.deconv(net, 2, 96, 1, batch_size,conv_padding='VALID') #for max pooling
-        net = op.deconv(net, 7, 96, 3, batch_size)
+        #net = op.deconv(net, 4, 96, 2, batch_size)  #for max pooling
+        net = op.deconv(net, 2, 96, 2, batch_size)
+        print("check ", net.shape)
 
        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
      with tf.variable_scope('decon5layer'):
-        net = op.deconv(net, 1, 1, 1, batch_size)
+        net = op.deconv(net, 1, 1, 2, batch_size)
         # activation_fn = tf.nn.tanh
-        #print("check ",net.shape)
+        print("check ",net.shape)
         return net
 
 

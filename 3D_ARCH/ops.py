@@ -22,8 +22,7 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
 
 def deconv(inputs, kernel_size, output_num, stride_size=1,batch_size=None, conv_padding='SAME', stddev=0.01):
     input_size = inputs.get_shape().as_list()[-1]
-    ccc=inputs.get_shape()[0].value
-    #print("ccc", ccc)deconv_dim(inputs.get_shape().as_list()[1],stride_size,kernel_size,conv_padding)
+
     depth=get_deconv_dim(inputs.get_shape().as_list()[1],stride_size,kernel_size,conv_padding)
     height=get_deconv_dim(inputs.get_shape().as_list()[2],stride_size,kernel_size,conv_padding)
     width=get_deconv_dim(inputs.get_shape().as_list()[3],stride_size,kernel_size,conv_padding)

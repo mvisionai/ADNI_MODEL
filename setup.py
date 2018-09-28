@@ -5,5 +5,6 @@ setup(name='ADNI_MODEL',
       description='AD Prediction Using ResNet3D',
       author='Big Data RM309',
       author_email='',
-      install_requires=['tensorflow>=1.8.0'],
       packages=[])
+
+#install_requires = ['tensorflow>=1.8.0']

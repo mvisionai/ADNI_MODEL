@@ -283,7 +283,7 @@ class Dataset_Import(object):
             loads = img_to_array(image_load.get_data()[:, :, :, 0])
             data=image_load.get_data()
             data_normalise = data[:, :, :, 0]
-            data_normalise = np.resize(data_normalise, self.img_shape_tuple)
+            print(data_normalise.shape)
 
             #print(data_normalise.shape)
             #plt.imshow(data_normalise[:, :, 210], cmap='gray')
@@ -597,19 +597,12 @@ if __name__=="__main__"    :
         #lent=int(len(dataset_feed.target_validation_data())/5)
         #maxc=max(lens,lent)
 
-        #print(lens,lent,maxc)
-
-        feed=dataset_feed.next_batch_combined(3)
-        data_feed = [dlabel for dlabel in feed]
-        data_feed = np.array(data_feed)
-        print(list(data_feed[0:, 0]))
-
 
 
 
         #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
         #dataset_feed.statistics()
-        #dataset_feed.show_image()
+        dataset_feed.show_image()
         #dataset_feed.statistics()
         #dataset_feed.cnn_layer()
         #dataset_feed.save_training_data()
