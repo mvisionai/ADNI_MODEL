@@ -3,10 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-from tensorflow.contrib.keras.python.keras import backend as K
-import ops as op
-from flip_gradient import flip_gradient
-import  numpy as np
+from tensorflow.contrib.keras.api.keras import backend as K
+import ops as op_linker
 
 shape_to_return=None
 d_W_fc0=None
@@ -40,29 +38,33 @@ def inference(inputs, dropout_keep_prob, label_cnt):
     # todo: change lrn parameters
     with tf.variable_scope("convolution"):
             with tf.variable_scope('conv1layer'):
-                conv1 = op.conv(inputs, 7, 96, 3)   # (input data, kernel size, #output channels, stride_size)
-                #conv1 = op.lrn(conv1)
-                conv1 = tf.nn.max_pool3d(conv1, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
+                conv1 = op_linker.conv(inputs, 2, 32,1)   # (input data, kernel size, #output channels, stride_size)
+                conv1 = tf.layers.batch_normalization(conv1)
+                conv1 = tf.nn.max_pool3d(conv1, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 2
             with tf.variable_scope('conv2layer'):
-                conv2 = op.conv(conv1, 5, 256, 1, 0.1)
-                #conv2 = op.lrn(conv2)
-                        
-                conv2 = tf.nn.max_pool3d(conv2, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
+                conv2 = op_linker.conv(conv1,2,64, 1, 0.1)
+                conv2 = tf.layers.batch_normalization(conv2)
+                conv2 = tf.nn.max_pool3d(conv2, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 3
             with tf.variable_scope('conv3layer'):
-                conv3 = op.conv(conv2, 3, 384, 1,0.1)
+                conv3 = op_linker.conv(conv2, 2,128, 1, 0.1)
+                conv3 = tf.layers.batch_normalization(conv3)
+                conv3 = tf.nn.max_pool3d(conv3, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
                 #no bias
 
             # conv layer 4
             with tf.variable_scope('conv4layer'):
-                conv4 = op.conv(conv3, 3, 384, 1, 0.1)
+                conv4 = op_linker.conv(conv3,2, 256, 1, 0.1)
+                conv4 = tf.layers.batch_normalization(conv4)
+                conv4 = tf.nn.max_pool3d(conv4, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 5
             with tf.variable_scope('conv5layer'):
-                conv5 = op.conv(conv4, 3, 256, 1, 0.1)
+                conv5 = op_linker.conv(conv4, 2, 512, 1, 0.1)
+                conv5 = tf.layers.batch_normalization(conv5)
                 conv5 = tf.nn.max_pool3d(conv5, ksize=[1, 3, 3, 3, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # fc layer 1
@@ -70,13 +72,13 @@ def inference(inputs, dropout_keep_prob, label_cnt):
                 global  shape_to_return
                 global  d_b_fc0
                 global  d_W_fc0
-                fc1,shape_to_return,d_W_fc0,d_b_fc0 = op.fc(conv5, 4096,0.1,use_weight=True)
+                fc1,shape_to_return,d_W_fc0,d_b_fc0 = op_linker.fc(conv5,512, 0.1, use_weight=True)
                 fc1 = tf.nn.dropout(fc1, dropout_keep_prob)
                 #bias changed
 
             # fc layer 2
             with tf.variable_scope('fc2layer'):
-                fc2 = op.fc(fc1, 4096,0.1)
+                fc2 = op_linker.fc(fc1,512, 0.1)
                 fc2 = tf.nn.dropout(fc2, dropout_keep_prob)
                 #bias changed
 
@@ -84,13 +86,13 @@ def inference(inputs, dropout_keep_prob, label_cnt):
             with tf.variable_scope('fc3layer'):
                 print(" ",end="\n")
                 print("Graph Built")
-                final_layer=op.fc(fc2, label_cnt, 0.1,activation_func=tf.nn.softmax)
+                final_layer=op_linker.fc(fc2, label_cnt, 0.1, activation_func=tf.nn.softmax)
                 return final_layer
                 #bias changed
 
 
 
-def autoencoder(inputs,batch_size):
+def autoencoder(inputs,batch):
 
   with tf.variable_scope('autoencoder') as scope:
 
@@ -99,57 +101,64 @@ def autoencoder(inputs,batch_size):
      print("shape 1",inputs.shape)
      with tf.variable_scope('conv1layer'):
         #print("Main", inputs.shape)
-        net = op.conv(inputs, 2, 96, 2)  #3
-        #net = tf.nn.max_pool3d(net, ksize=[1, 6, 6, 6, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
+        net = op_linker.conv(inputs, 2,32)  #3
+        net=tf.layers.batch_normalization(net)
+        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
         #print("check ", net.shap # e)
         print("shape 1",net.shape)
 
      with tf.variable_scope('conv2layer'):
-        net = op.conv(net, 2, 256, 2)
-        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
+        net = op_linker.conv(net, 2,64)
+        net = tf.layers.batch_normalization(net)
+        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
         print("shape 2", net.shape)
 
      with tf.variable_scope('conv3layer'):
-        net = op.conv(net, 2, 384, 2)
-        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID') #tuned
+        net = op_linker.conv(net, 2,128)
+        net = tf.layers.batch_normalization(net)
+        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         print("shape 3", net.shape)
 
      with tf.variable_scope('conv4layer'):
-        net = op.conv(net, 2, 384, 2)
-        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID') #tuned
+        net = op_linker.conv(net, 2,256)
+        net = tf.layers.batch_normalization(net)
+        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         print("shape 4", net.shape)
 
      with tf.variable_scope('conv5layer'):
-        net = op.conv(net, 2, 256, 2)
-        #print(np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])*28/ 3074)
-        #net = tf.nn.max_pool3d(net, ksize=[1, 3, 3, 3, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
+        net = op_linker.conv(net, 2,512)
+        net = tf.layers.batch_normalization(net)
+        net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         print("shape 5", net.shape)
 
         # decoder
      with tf.variable_scope('decon1layer'):
-        net =op.deconv(net,2, 384,2,batch_size)
+        net = K.resize_volumes(net, 2, 2, 2, "channels_last")
+        net = op_linker.deconv(net, 2, 256,batch_size=batch)
         print("check ", net.shape)
 
 
      with tf.variable_scope('decon2layer'):
-        net = op.deconv(net,2, 384,2,batch_size)
+        net = K.resize_volumes(net, 2, 2, 2, "channels_last")
+        net = op_linker.deconv(net, 2, 128,batch_size=batch)
         print("check ", net.shape)
 
      with tf.variable_scope('decon3layer'):
-
-        net = op.deconv(net, 2, 256, 2, batch_size)  # for max pooling , conv_padding='VALID'
+        net = K.resize_volumes(net, 2, 2, 2, "channels_last")
+        net = op_linker.deconv(net, 2, 64,batch_size=batch)  # for max pooling , conv_padding='VALID'
         #net = op.deconv(net,5, 256, 1,batch_size)
         print("check ", net.shape)
 
      with tf.variable_scope('decon4layer'):
-        #net = op.deconv(net, 4, 96, 2, batch_size)  #for max pooling
-        net = op.deconv(net, 2, 96, 2, batch_size)
+        net = K.resize_volumes(net, 2, 2, 2, "channels_last")
+        net = op_linker.deconv(net, 2, 32,batch_size=batch)
         print("check ", net.shape)
 
        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
      with tf.variable_scope('decon5layer'):
-        net = op.deconv(net, 1, 1, 2, batch_size)
+        net = K.resize_volumes(net, 2, 2, 2, "channels_last")
+        net = tf.layers.dense(inputs=net, units=1)
         # activation_fn = tf.nn.tanh
         print("check ",net.shape)
         return net
@@ -168,7 +177,7 @@ def domain_parameters(flip_value):
         feat = feature   #flip_gradient(feature, l)
         d_h_fc0 = tf.nn.relu(tf.matmul(feat, d_W_fc0) + d_b_fc0)
 
-        d_W_fc1 = weight_variable([4096, 2])
+        d_W_fc1 = weight_variable([512, 2])
         d_b_fc1 = bias_variable([2])
         final_la =  tf.matmul(d_h_fc0, d_W_fc1) + d_b_fc1
         domain_pred = tf.nn.softmax(final_la)
@@ -256,5 +265,5 @@ def new_encoder(inputs_,padding="SAME",stride=1):
 
     output = tf.layers.dense(inputs=deconv3, units=1)
     #print("main shape ",output.shape)
-    output = tf.reshape(output, (10,10,10,1))
+
     return  output

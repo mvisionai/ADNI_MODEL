@@ -7,7 +7,7 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
 
     input_size = inputs.get_shape().as_list()[-1]
 
-    init_weight_var=tf.random_normal_initializer(stddev=0.02)
+    #init_weight_var=tf.random_normal_initializer(stddev=0.02)
     conv_weights =tf.get_variable(name='weights', shape=[kernel_size, kernel_size, kernel_size, input_size, output_num],initializer=tf.contrib.layers.xavier_initializer(),trainable=True)
     tf.summary.histogram("weight_value",conv_weights)
     conv_biases = tf.get_variable(name='net_biases',
@@ -20,7 +20,7 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
     return conv_layer
 
 
-def deconv(inputs, kernel_size, output_num, stride_size=1,batch_size=None, conv_padding='SAME', stddev=0.01):
+def deconv(inputs, kernel_size, output_num, stride_size=1,conv_padding='SAME', stddev=0.01,batch_size=None):
     input_size = inputs.get_shape().as_list()[-1]
 
     depth=get_deconv_dim(inputs.get_shape().as_list()[1],stride_size,kernel_size,conv_padding)
@@ -30,9 +30,8 @@ def deconv(inputs, kernel_size, output_num, stride_size=1,batch_size=None, conv_
         tf.truncated_normal([kernel_size, kernel_size, kernel_size,output_num, input_size], dtype=tf.float32,
                             stddev=stddev),
         name='de_weights')
-
     dconv_layer = tf.nn.conv3d_transpose(inputs, dconv_weights,output_shape=[batch_size,depth,height,width,output_num], strides=[1, stride_size, stride_size, stride_size, 1], padding=conv_padding)
-    #dconv_layer = tf.layers.conv3d_transpose(inputs,output_num,[kernel_size,kernel_size,kernel_size],[stride_size,stride_size,stride_size],padding="SAME")
+    #dconv_layer = tf.layers.conv3d_transpose(inputs,output_num,kernel_size,stride_size,padding=conv_padding)
 
     #print("dec ", dconv_layer.get_shape())
 

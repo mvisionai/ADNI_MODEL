@@ -266,24 +266,24 @@ class Dataset_Import(object):
         self.pic_index += 8
         #[self.pic_index - 8:self.pic_index]
         next_ad_pix = [fname
-                        for fname in self.read_directory_file(self.train_ad_dir,"AD")]
+                        for fname in self.read_directory_file(self.validation_ad_dir,"AD")]
         next_mci_pix = [fname
-                        for fname in self.read_directory_file(self.train_mci_dir,"MCI")]
+                        for fname in self.read_directory_file(self.validation_mci_dir,"MCI")]
         next_nc_pix = [fname
-                        for fname in self.read_directory_file(self.train_nc_dir,"NC")]
+                        for fname in self.read_directory_file(self.validation_nc_dir,"NC")]
 
-        for i, img_path in enumerate(next_ad_pix + next_mci_pix + next_nc_pix):
+        for i, img_path in enumerate(next_nc_pix+next_ad_pix  + next_mci_pix):
             # Set up subplot; subplot indices start at 1
             #sp = plt.subplot(self.nrows, self.ncols, i + 1)
             #sp.axis('Off')  # Don't show axes (or gridlines)
 
-            print(img_path)
+
             image_load = nib.load(img_path[0],
                                   mmap=False)
             loads = img_to_array(image_load.get_data()[:, :, :, 0])
-            data=image_load.get_data()
-            data_normalise = data[:, :, :, 0]
-            print(data_normalise.shape)
+            data=np.resize(loads,(270,270,270))
+            print(data.shape)
+            break
 
             #print(data_normalise.shape)
             #plt.imshow(data_normalise[:, :, 210], cmap='gray')

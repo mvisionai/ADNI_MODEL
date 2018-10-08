@@ -16,7 +16,7 @@ ncols = 4
 
 
 #(20,20,20)
-img_shape_tuple=(96,96,96)
+img_shape_tuple=(64,64,64)
 train_ad_fnames = None
 img_channel=1
 train_mci_fnames = None

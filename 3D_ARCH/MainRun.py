@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python.pywrap_tensorflow import NewCheckpointReader
 import os
 import  Alex3D as model
 import numpy as np
@@ -112,164 +113,163 @@ class Main_run(Dataset_Import):
             self.shu_control_state=False
 
 
-        # tf.reset_default_graph()
-        #
-        # g2 = tf.Graph()
-        # # Merge all summaries together
-        #
-        # with g2.as_default() as g3:
-        #
-        #
-        #         inputs, labels, dropout_keep_prob, learning_rate, domain_label, flip_grad = model.input_placeholder(
-        #         self.image_size, self.img_channel, self.label_cnt)
-        #
-        #         logits = model.inference(inputs, dropout_keep_prob, self.label_cnt)
-        #
-        #         accuracy = model.accuracy(logits, labels)
-        #         pred_loss = model.loss(logits, labels)
-        #
-        #         domain_logits = model.domain_parameters(flip_grad)
-        #         domain_accuracy = model.domain_accuracy(domain_logits, domain_label)
-        #         domain_loss = model.domain_loss(domain_logits, domain_label)
-        #
-        #         total_loss = pred_loss + domain_loss
-        #
-        #         convolve_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+con_var) for con_var in
-        #                               constant.pre_trained]
-        #
-        #         fully_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+fc_var) for fc_var in
-        #                            constant.not_trained]
-        #
-        #         # train = tf.train.AdamOptimizer(learning_rate).minimize(total_loss)
-        #         train_op_trained = tf.train.RMSPropOptimizer(self.learning_rate_convlayer, self.rms_decay).minimize(total_loss,
-        #                                                                                                             var_list=convolve_variables)
-        #         train_op_untrained = tf.train.RMSPropOptimizer(self.learn_rate_fully_layer, self.rms_decay).minimize(total_loss,
-        #                                                                                                              var_list=fully_variables)
-        #         train_op = tf.group(train_op_trained, train_op_untrained)
-        #
-        #         tr_merge_summary = tf.summary.merge_all()
-        #
-        # tf.reset_default_graph()
-        # with tf.Session(graph=g3) as  tr_sess:
-        #
-        #     imported_meta = tf.train.import_meta_graph("np_data/model_final.meta")
-        #     tr_writer = tf.summary.FileWriter(
-        #         os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "summaries\\train"),tr_sess.graph)
-        #
-        #     tr_sess.run(tf.global_variables_initializer())
-        #
-        #     #summ_writer = tf.summary.FileWriter(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "summaries"),tr_sess.graph)
-        #     imported_meta.restore(tr_sess, tf.train.latest_checkpoint('np_data'))
-        #     latest_ckp = tf.train.latest_checkpoint('np_data')
-        #
-        #     reader = pywrap_tensorflow.NewCheckpointReader(latest_ckp )
-        #     var_to_shape_map = reader.get_variable_to_shape_map()
-        #     #load autoencoder pretrained weights and biase
-        #     op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
-        #
-        #     print(" ",end="\n")
-        #     print("Initializing Class Training")
-        #
-        #
-        #     for epoch in range(self.training_epoch):
-        #
-        #       start_time_2=time.time()
-        #       for i in range(total_batch):
-        #
-        #             source_feed=self.next_batch_combined(self.batch_size)
-        #
-        #             data_source = [data for data in source_feed]
-        #             data_source = np.array(data_source)
-        #             data_feed=list(data_source[0:, 0])
-        #             data_label=list(data_source[0:, 1])
-        #             label_domain =list(data_source[0:, 2])
-        #
-        #
-        #             feed_dict_source_batch = {inputs: data_feed, labels: data_label,
-        #                                       dropout_keep_prob: self.dropout_prob,
-        #                                       learning_rate: self.learn_rate_pred, domain_label: label_domain, flip_grad: 1.0}
-        #             _, loss_source_batch, acc_source_batch, accuracy_domain, loss_domain, log_d,acc_log,summary_out2= tr_sess.run(
-        #                 [train_op, total_loss, accuracy, domain_accuracy, domain_loss, domain_logits,logits,tr_merge_summary],
-        #                 feed_dict=feed_dict_source_batch)
-        #
-        #       tr_writer.add_summary(summary_out2,epoch)
-        #
-        #
-        #
-        #       end_time_2 = time.time()
-        #       print(" ",end="\n")
-        #       print("Epoch " + str(epoch + 1) + " completed : Time usage " + str(int(end_time_2 - start_time_2)) + " seconds")
-        #       print("Training total_loss: {:.5f}".format(loss_source_batch))
-        #       print("Training class_accuracy: {0:.3f}".format(acc_source_batch))
-        #       print("Training domain_loss: {:.5f}".format(loss_domain))
-        #       print("Training domain_accuracy: {0:.3f}".format(accuracy_domain))
-        #
-        #       #print("label ",data_label)
-        #       #print("logit ",acc_log)
-        #       self.trainer_shuffling_state = True
-        #       self.shu_control_state = True
-        #       self.set_epoch =epoch
-        #       self.i=0
-        #
-        #       # validation batch
-        #
-        #     len_svalidation = int(len(self.source_validation_data()) /self.batch_size)
-        #     len_tvalidation = int(len(self.target_validation_data()) /self.batch_size)
-        #     max_iteration = max(len_svalidation,len_tvalidation)
-        #     tf.range
-        #
-        #     for steps in range(max_iteration) :
-        #
-        #
-        #           if steps==len_svalidation-1:
-        #               self.valid_source=0
-        #
-        #           vsource_feed= self.convert_validation_source_data(self.batch_size)
-        #           vtarget_feed=self.convert_validation_target_data(self.batch_size)
-        #
-        #           data_vsource = [data for data in vsource_feed]
-        #           data_vsource = np.array(data_vsource)
-        #           validation_source_dataset = list(data_vsource[0:, 0])
-        #           valid_source_label = list(data_vsource[0:, 1])
-        #           valid_source_d_label = list(data_vsource[0:, 2])
-        #
-        #           data_vtarget = [datav for datav in vtarget_feed]
-        #           data_vtarget = np.array(data_vtarget)
-        #           validation_target_dataset = list(data_vtarget[0:, 0])
-        #           valid_target_label = list(data_vtarget[0:, 1])
-        #           valid_target_d_label = list(data_vtarget[0:, 2])
-        #
-        #
-        #
-        #           acc_source_valid = tr_sess.run(accuracy,
-        #                                          feed_dict={inputs: validation_source_dataset,
-        #                                                     labels: valid_source_label,
-        #                                                     dropout_keep_prob: 1.0})
-        #
-        #           acc_target_valid = tr_sess.run(accuracy,
-        #                                          feed_dict={inputs: validation_target_dataset,
-        #                                                     labels: valid_target_label,
-        #                                                     dropout_keep_prob: 1.0})
-        #
-        #           valid_data_feed = np.vstack([validation_source_dataset, validation_target_dataset])
-        #           valid_data_label = np.vstack([valid_source_label, valid_target_label])
-        #           valid_data_d_label = np.vstack([valid_source_d_label, valid_target_d_label])
-        #
-        #           validation_accuracy, acc_domain = tr_sess.run([accuracy, domain_accuracy],
-        #                                                         feed_dict={inputs: valid_data_feed,
-        #                                                                    labels: valid_data_label,
-        #                                                                    dropout_keep_prob: 1.0,
-        #                                                                    domain_label: valid_data_d_label, flip_grad: 0})
-        #
-        #           print(" ", end="\n")
-        #           print("-------Validation ",steps+1,"----------", end="\n")
-        #           print("Validation   accuracy: {0:.2f}".format(validation_accuracy))
-        #           print("Validation source  accuracy: {0:.2f}".format(acc_source_valid))
-        #           print("Validation target  accuracy: {0:.2f}".format(acc_target_valid))
-        #           print("Validation domain  accuracy: {0:.2f}".format(acc_domain))
-        #
-        #           # end of validation batch
-        #
+        tf.reset_default_graph()
+
+        g2 = tf.Graph()
+        # Merge all summaries together
+
+        with g2.as_default() as g3:
+
+
+                inputs, labels, dropout_keep_prob, learning_rate, domain_label, flip_grad = model.input_placeholder(
+                self.image_size, self.img_channel, self.label_cnt)
+
+                logits = model.inference(inputs, dropout_keep_prob, self.label_cnt)
+
+                accuracy = model.accuracy(logits, labels)
+                pred_loss = model.loss(logits, labels)
+
+                domain_logits = model.domain_parameters(flip_grad)
+                domain_accuracy = model.domain_accuracy(domain_logits, domain_label)
+                domain_loss = model.domain_loss(domain_logits, domain_label)
+
+                total_loss = pred_loss + domain_loss
+
+                convolve_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+con_var) for con_var in
+                                      constant.pre_trained]
+
+                fully_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+fc_var) for fc_var in
+                                   constant.not_trained]
+
+                # train = tf.train.AdamOptimizer(learning_rate).minimize(total_loss)
+                train_op_trained = tf.train.RMSPropOptimizer(self.learning_rate_convlayer, self.rms_decay).minimize(total_loss,
+                                                                                                                    var_list=convolve_variables)
+                train_op_untrained = tf.train.RMSPropOptimizer(self.learn_rate_fully_layer, self.rms_decay).minimize(total_loss,
+                                                                                                                     var_list=fully_variables)
+                train_op = tf.group(train_op_trained, train_op_untrained)
+
+                tr_merge_summary = tf.summary.merge_all()
+
+        tf.reset_default_graph()
+        with tf.Session(graph=g3) as  tr_sess:
+
+            imported_meta = tf.train.import_meta_graph("np_data/model_final.meta")
+            tr_writer = tf.summary.FileWriter(
+                os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "summaries\\train"),tr_sess.graph)
+
+            tr_sess.run(tf.global_variables_initializer())
+
+            imported_meta.restore(tr_sess, tf.train.latest_checkpoint('np_data'))
+            latest_ckp = tf.train.latest_checkpoint('np_data')
+
+            reader =NewCheckpointReader(latest_ckp )
+            var_to_shape_map = reader.get_variable_to_shape_map()
+            #load autoencoder pretrained weights and biase
+            op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
+
+            print(" ",end="\n")
+            print("Initializing Class Training")
+
+
+            for epoch in range(2):
+
+              start_time_2=time.time()
+              for i in range(2):
+
+                    source_feed=self.next_batch_combined(self.batch_size)
+
+                    data_source = [data for data in source_feed]
+                    data_source = np.array(data_source)
+                    data_feed=list(data_source[0:, 0])
+                    data_label=list(data_source[0:, 1])
+                    label_domain =list(data_source[0:, 2])
+
+
+                    feed_dict_source_batch = {inputs: data_feed, labels: data_label,
+                                              dropout_keep_prob: self.dropout_prob,
+                                              learning_rate: self.learn_rate_pred, domain_label: label_domain, flip_grad: 1.0}
+                    _, loss_source_batch, acc_source_batch, accuracy_domain, loss_domain, log_d,acc_log,summary_out2= tr_sess.run(
+                        [train_op, total_loss, accuracy, domain_accuracy, domain_loss, domain_logits,logits,tr_merge_summary],
+                        feed_dict=feed_dict_source_batch)
+
+              tr_writer.add_summary(summary_out2,epoch)
+
+
+
+              end_time_2 = time.time()
+              print(" ",end="\n")
+              print("Epoch " + str(epoch + 1) + " completed : Time usage " + str(int(end_time_2 - start_time_2)) + " seconds")
+              print("Training total_loss: {:.5f}".format(loss_source_batch))
+              print("Training class_accuracy: {0:.3f}".format(acc_source_batch))
+              print("Training domain_loss: {:.5f}".format(loss_domain))
+              print("Training domain_accuracy: {0:.3f}".format(accuracy_domain))
+
+              #print("label ",data_label)
+              #print("logit ",acc_log)
+              self.trainer_shuffling_state = True
+              self.shu_control_state = True
+              self.set_epoch =epoch
+              self.i=0
+
+              # validation batch
+
+            len_svalidation = int(len(self.source_validation_data()) /self.batch_size)
+            len_tvalidation = int(len(self.target_validation_data()) /self.batch_size)
+            max_iteration = max(len_svalidation,len_tvalidation)
+            tf.range
+
+            for steps in range(max_iteration) :
+
+
+                  if steps==len_svalidation-1:
+                      self.valid_source=0
+
+                  vsource_feed= self.convert_validation_source_data(self.batch_size)
+                  vtarget_feed=self.convert_validation_target_data(self.batch_size)
+
+                  data_vsource = [data for data in vsource_feed]
+                  data_vsource = np.array(data_vsource)
+                  validation_source_dataset = list(data_vsource[0:, 0])
+                  valid_source_label = list(data_vsource[0:, 1])
+                  valid_source_d_label = list(data_vsource[0:, 2])
+
+                  data_vtarget = [datav for datav in vtarget_feed]
+                  data_vtarget = np.array(data_vtarget)
+                  validation_target_dataset = list(data_vtarget[0:, 0])
+                  valid_target_label = list(data_vtarget[0:, 1])
+                  valid_target_d_label = list(data_vtarget[0:, 2])
+
+
+
+                  acc_source_valid = tr_sess.run(accuracy,
+                                                 feed_dict={inputs: validation_source_dataset,
+                                                            labels: valid_source_label,
+                                                            dropout_keep_prob: 1.0})
+
+                  acc_target_valid = tr_sess.run(accuracy,
+                                                 feed_dict={inputs: validation_target_dataset,
+                                                            labels: valid_target_label,
+                                                            dropout_keep_prob: 1.0})
+
+                  valid_data_feed = np.vstack([validation_source_dataset, validation_target_dataset])
+                  valid_data_label = np.vstack([valid_source_label, valid_target_label])
+                  valid_data_d_label = np.vstack([valid_source_d_label, valid_target_d_label])
+
+                  validation_accuracy, acc_domain = tr_sess.run([accuracy, domain_accuracy],
+                                                                feed_dict={inputs: valid_data_feed,
+                                                                           labels: valid_data_label,
+                                                                           dropout_keep_prob: 1.0,
+                                                                           domain_label: valid_data_d_label, flip_grad: 0})
+
+                  print(" ", end="\n")
+                  print("-------Validation ",steps+1,"----------", end="\n")
+                  print("Validation   accuracy: {0:.2f}".format(validation_accuracy))
+                  print("Validation source  accuracy: {0:.2f}".format(acc_source_valid))
+                  print("Validation target  accuracy: {0:.2f}".format(acc_target_valid))
+                  print("Validation domain  accuracy: {0:.2f}".format(acc_domain))
+
+                  # end of validation batch
+
 
 if __name__ == '__main__':
 
