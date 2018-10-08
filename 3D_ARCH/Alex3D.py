@@ -98,61 +98,61 @@ def autoencoder(inputs,batch):
 
      #scope.reuse_variables()
         # encoder
-     print("shape 1",inputs.shape)
+     #print("shape 1",inputs.shape)
      with tf.variable_scope('conv1layer'):
         #print("Main", inputs.shape)
         net = op_linker.conv(inputs, 2,32)  #3
         net=tf.layers.batch_normalization(net)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
         #print("check ", net.shap # e)
-        print("shape 1",net.shape)
+        #print("shape 1",net.shape)
 
      with tf.variable_scope('conv2layer'):
         net = op_linker.conv(net, 2,64)
         net = tf.layers.batch_normalization(net)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
-        print("shape 2", net.shape)
+        #print("shape 2", net.shape)
 
      with tf.variable_scope('conv3layer'):
         net = op_linker.conv(net, 2,128)
         net = tf.layers.batch_normalization(net)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
-        print("shape 3", net.shape)
+        #print("shape 3", net.shape)
 
      with tf.variable_scope('conv4layer'):
         net = op_linker.conv(net, 2,256)
         net = tf.layers.batch_normalization(net)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
-        print("shape 4", net.shape)
+        #print("shape 4", net.shape)
 
      with tf.variable_scope('conv5layer'):
         net = op_linker.conv(net, 2,512)
         net = tf.layers.batch_normalization(net)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
-        print("shape 5", net.shape)
+        #print("shape 5", net.shape)
 
         # decoder
      with tf.variable_scope('decon1layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 256,batch_size=batch)
-        print("check ", net.shape)
+        #print("check ", net.shape)
 
 
      with tf.variable_scope('decon2layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 128,batch_size=batch)
-        print("check ", net.shape)
+        #print("check ", net.shape)
 
      with tf.variable_scope('decon3layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 64,batch_size=batch)  # for max pooling , conv_padding='VALID'
         #net = op.deconv(net,5, 256, 1,batch_size)
-        print("check ", net.shape)
+        #print("check ", net.shape)
 
      with tf.variable_scope('decon4layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 32,batch_size=batch)
-        print("check ", net.shape)
+        #print("check ", net.shape)
 
        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
@@ -160,7 +160,7 @@ def autoencoder(inputs,batch):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = tf.layers.dense(inputs=net, units=1)
         # activation_fn = tf.nn.tanh
-        print("check ",net.shape)
+        #print("check ",net.shape)
         return net
 
 
