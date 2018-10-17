@@ -13,7 +13,8 @@ import numpy as np
 import AD_Constants as constants
 import requests
 from numpy import random
-from keras.preprocessing.image import ImageDataGenerator,img_to_array, load_img,array_to_img
+from tensorflow.contrib.keras.api.keras.preprocessing.image import ImageDataGenerator,img_to_array, load_img,array_to_img
+
 
 
 class Dataset_Import(object):
@@ -339,8 +340,15 @@ class Dataset_Import(object):
           self.set_random_seed(0)
         else:
           self.set_random_seed((self.i+1)*self.set_epoch*10)
-        all_data=self.shuffle(np.vstack((self.all_target_data(),self.all_source_data())))
-        return all_data
+
+        return  self.shuffle(np.vstack((self.all_target_data(),self.all_source_data())))
+
+    def source_data_feed(self):
+        if self.auto_shuffling_state == False:
+            self.set_random_seed(0)
+        else:
+            self.set_random_seed((self.i + 1) * self.set_epoch * 10)
+        return self.shuffle(self.all_source_data())
 
     def source_target_combined_2(self):
         if self.trainer_shuffling_state == False:
@@ -348,14 +356,17 @@ class Dataset_Import(object):
         else:
             np.random.seed(None)
             self.set_random_seed((self.set_epoch+1)*100)
-         # self.set_random_seed((self.i+1)*self.set_epoch*30
 
-        #data_first=self.shuffle(np.vstack((self.source_training_data()[0:int(len(self.source_training_data())/2)],self.target_training_data()[0:int(len(self.target_training_data())/2)])))
-        #data_second =self.shuffle(np.vstack((self.source_training_data()[int(len(self.source_training_data())/2)+1:len(self.source_training_data())],self.target_training_data()[int(len(self.target_training_data())/2)+1:len(self.target_training_data())])))
-
-        #all_data = self.shuffle(np.vstack((self.source_training_data(), self.target_training_data())))
         return  self.shuffle(np.vstack(( self.target_training_data(),self.source_training_data())))
 
+    def source_data(self):
+        if self.trainer_shuffling_state == False:
+          self.set_random_seed(0)
+        else:
+            np.random.seed(None)
+            self.set_random_seed((self.set_epoch+1)*100)
+
+        return  self.shuffle(self.source_training_data())
 
     def training_source_target(self):
         return self.source_target_combined()[0:self.training_number(len(self.all_source_data()))]
@@ -366,15 +377,15 @@ class Dataset_Import(object):
 
 
 
-    def next_batch_combined_encoder(self,batch_size):
+    def next_batch_combined_encoder(self,batch_size,training_type="domain"):
         # Note that the  dimension in the reshape call is set by an assumed batch size set
-        batch_data =self.source_target_combined()[self.i:self.i + batch_size]
-        #batch_data = self.shuffle(batch_data)
 
-        #print("checking shuffling ",batch_data)
-
-        # print("from ",self.i," to ",self.i + batch_size)
-        self.i = (self.i + batch_size) % len(self.source_target_combined())
+        if training_type=="domain":
+          batch_data =self.source_target_combined()[self.i:self.i + batch_size]
+          self.i = (self.i + batch_size) % len(self.source_target_combined())
+        elif training_type=="single":
+            batch_data = self.source_data_feed()[self.i:self.i + batch_size]
+            self.i = (self.i + batch_size) % len( self.source_data_feed())
 
         if len(self.img_shape_tuple) == 2:
 
@@ -585,10 +596,10 @@ class Dataset_Import(object):
         r = requests.get('https://frightanic.com/goodies_content/docker-names.php')
         print(r.text.rstrip())
 
-if __name__=="__main__"    :
+#if __name__=="__main__"    :
 
    #try:
-        dataset_feed=Dataset_Import()
+        #dataset_feed=Dataset_Import()
        # print(dataset_feed.target_validation_data())
         #dataset_feed.load_dataset()
         #dataset_feed.sample_yaml()
@@ -602,7 +613,7 @@ if __name__=="__main__"    :
 
         #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
         #dataset_feed.statistics()
-        dataset_feed.show_image()
+        #dataset_feed.show_image()
         #dataset_feed.statistics()
         #dataset_feed.cnn_layer()
         #dataset_feed.save_training_data()

@@ -9,16 +9,21 @@ import ops as op_linker
 shape_to_return=None
 d_W_fc0=None
 d_b_fc0=None
-def input_placeholder(image_size, image_channel, label_cnt):
+def input_placeholder(image_size, image_channel, label_cnt,train_type="domain"):
     with tf.name_scope('inputlayer'):
         inputs = tf.placeholder("float", [None, image_size, image_size, image_size, image_channel], 'inputs')
         labels = tf.placeholder("float", [None, label_cnt], 'labels')
+        training = tf.placeholder(tf.bool, [])
         dropout_keep_prob = tf.placeholder("float",None, name='keep_prob')
         learning_rate = tf.placeholder("float", None, name='learning_rate')
-        domain_label = tf.placeholder("float", [None,2], name='domain')
         flip_gra=tf.placeholder(tf.float32, [])
 
-    return inputs, labels, dropout_keep_prob, learning_rate,domain_label,flip_gra
+        if train_type == "domain":
+          domain_label = tf.placeholder("float", [None, 2], name='domain')
+          return inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_gra
+        elif train_type == "single":
+          return inputs, labels, training, dropout_keep_prob, learning_rate,flip_gra
+
 
 def train_inputs(image_size, image_channel, label_cnt) :
     with tf.name_scope('coninputlayer'):
@@ -34,37 +39,37 @@ def train_inputs(image_size, image_channel, label_cnt) :
 
 
 
-def inference(inputs, dropout_keep_prob, label_cnt):
+def inference(inputs, training, dropout_keep_prob, label_cnt):
     # todo: change lrn parameters
     with tf.variable_scope("convolution"):
             with tf.variable_scope('conv1layer'):
                 conv1 = op_linker.conv(inputs, 2, 32,1)   # (input data, kernel size, #output channels, stride_size)
-                conv1 = tf.layers.batch_normalization(conv1)
+                conv1 = tf.layers.batch_normalization(conv1, training=training)
                 conv1 = tf.nn.max_pool3d(conv1, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 2
             with tf.variable_scope('conv2layer'):
                 conv2 = op_linker.conv(conv1,2,64, 1, 0.1)
-                conv2 = tf.layers.batch_normalization(conv2)
+                conv2 = tf.layers.batch_normalization(conv2, training=training)
                 conv2 = tf.nn.max_pool3d(conv2, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 3
             with tf.variable_scope('conv3layer'):
                 conv3 = op_linker.conv(conv2, 2,128, 1, 0.1)
-                conv3 = tf.layers.batch_normalization(conv3)
+                conv3 = tf.layers.batch_normalization(conv3, training=training)
                 conv3 = tf.nn.max_pool3d(conv3, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
                 #no bias
 
             # conv layer 4
             with tf.variable_scope('conv4layer'):
                 conv4 = op_linker.conv(conv3,2, 256, 1, 0.1)
-                conv4 = tf.layers.batch_normalization(conv4)
+                conv4 = tf.layers.batch_normalization(conv4, training=training)
                 conv4 = tf.nn.max_pool3d(conv4, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # conv layer 5
             with tf.variable_scope('conv5layer'):
                 conv5 = op_linker.conv(conv4, 2, 512, 1, 0.1)
-                conv5 = tf.layers.batch_normalization(conv5)
+                conv5 = tf.layers.batch_normalization(conv5, training=training)
                 conv5 = tf.nn.max_pool3d(conv5, ksize=[1, 3, 3, 3, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
 
             # fc layer 1
@@ -92,7 +97,7 @@ def inference(inputs, dropout_keep_prob, label_cnt):
 
 
 
-def autoencoder(inputs,batch):
+def autoencoder(inputs, batch, training):
 
   with tf.variable_scope('autoencoder') as scope:
 
@@ -102,32 +107,32 @@ def autoencoder(inputs,batch):
      with tf.variable_scope('conv1layer'):
         #print("Main", inputs.shape)
         net = op_linker.conv(inputs, 2,32)  #3
-        net=tf.layers.batch_normalization(net)
+        net=tf.layers.batch_normalization(net, training=training)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
         #print("check ", net.shap # e)
         #print("shape 1",net.shape)
 
      with tf.variable_scope('conv2layer'):
         net = op_linker.conv(net, 2,64)
-        net = tf.layers.batch_normalization(net)
+        net = tf.layers.batch_normalization(net, training=training)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME')
         #print("shape 2", net.shape)
 
      with tf.variable_scope('conv3layer'):
         net = op_linker.conv(net, 2,128)
-        net = tf.layers.batch_normalization(net)
+        net = tf.layers.batch_normalization(net, training=training)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         #print("shape 3", net.shape)
 
      with tf.variable_scope('conv4layer'):
         net = op_linker.conv(net, 2,256)
-        net = tf.layers.batch_normalization(net)
+        net = tf.layers.batch_normalization(net, training=training)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         #print("shape 4", net.shape)
 
      with tf.variable_scope('conv5layer'):
         net = op_linker.conv(net, 2,512)
-        net = tf.layers.batch_normalization(net)
+        net = tf.layers.batch_normalization(net, training=training)
         net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 2, 2, 2, 1], padding='SAME') #tuned
         #print("shape 5", net.shape)
 
@@ -135,30 +140,34 @@ def autoencoder(inputs,batch):
      with tf.variable_scope('decon1layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 256,batch_size=batch)
+        net = tf.layers.batch_normalization(net, training=training)
         #print("check ", net.shape)
 
 
      with tf.variable_scope('decon2layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 128,batch_size=batch)
+        net = tf.layers.batch_normalization(net, training=training)
         #print("check ", net.shape)
 
      with tf.variable_scope('decon3layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 64,batch_size=batch)  # for max pooling , conv_padding='VALID'
+        net = tf.layers.batch_normalization(net, training=training)
         #net = op.deconv(net,5, 256, 1,batch_size)
         #print("check ", net.shape)
 
      with tf.variable_scope('decon4layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
         net = op_linker.deconv(net, 2, 32,batch_size=batch)
+        net = tf.layers.batch_normalization(net, training=training)
         #print("check ", net.shape)
 
        #net = tf.nn.max_pool3d(net, ksize=[1, 2, 2, 2, 1], strides=[1, 1, 1, 1, 1], padding='VALID')
 
      with tf.variable_scope('decon5layer'):
         net = K.resize_volumes(net, 2, 2, 2, "channels_last")
-        net = tf.layers.dense(inputs=net, units=1)
+        net = op_linker.deconv(net, 2, 1, batch_size=batch)
         # activation_fn = tf.nn.tanh
         #print("check ",net.shape)
         return net
