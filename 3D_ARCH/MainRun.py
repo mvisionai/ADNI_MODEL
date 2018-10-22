@@ -6,6 +6,7 @@ import  Alex3D as model
 import numpy as np
 from datetime import datetime
 from AD_Dataset import  Dataset_Import
+from tensorflow.contrib.tensorboard.plugins import projector
 import AD_Constants as constant
 import ops as op_linker
 import time
@@ -18,11 +19,11 @@ class Main_run(Dataset_Import):
     def __init__(self):
         super().__init__()
         self.now = datetime.now()
-        self.training_epoch = 50
-        self.auto_encode_epoch = 50
+        self.training_epoch = 500
+        self.auto_encode_epoch = 500
         self.batch_size = 2
         self.validation_interval = 20
-        self.dropout_prob = 0.60
+        self.dropout_prob = 0.50
         self.learn_rate_auto = 0.001
         self.learn_rate_pred = 0.00001
         self.learning_rate_convlayer=0.00001
@@ -36,7 +37,7 @@ class Main_run(Dataset_Import):
         # Data info.
         self.image_size =constant.img_shape_tuple[0]  # image size
         self.img_channel = constant.img_channel  # number of channels (1 for black & white)
-        self.label_cnt = 3  # number of classes
+        self.label_cnt = len(constant.classify_group)  # number of classes
 
     def train(self, train_type: str="domain", use_encoder_saver: bool=False, use_train_saver: bool=False):
 
@@ -44,6 +45,14 @@ class Main_run(Dataset_Import):
 
             if train_type  not in ["domain","single"]:
                 raise("Train type argument invalid")
+
+            if train_type == "domain":
+
+                total_batch = int(len(self.source_target_combined_2()) / self.batch_size)
+                total_batch_auto = total_batch
+            elif train_type == "single":
+                total_batch = int(len(self.source_data()) / self.batch_size)
+                total_batch_auto = total_batch
 
 
             if train_type == "domain":
@@ -58,32 +67,26 @@ class Main_run(Dataset_Import):
             if use_encoder_saver == False:
 
 
-                autoencoder_run=model.autoencoder(inputs,self.batch_size, training)
+                autoencoder_run=model.autoencoder_vg16(inputs,self.batch_size, training)
 
                 # autoencoder loss
                 autoencoder_loss = model.loss_autoencoder(inputs, autoencoder_run)
 
 
 
-                #tf.train.RMSPropOptimizer(learning_rate,self.rms_decay).minimize(total_loss)
+
 
 
                 auto_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
                 with tf.control_dependencies(auto_update_ops):
-                    train_autoencode = tf.train.AdamOptimizer(learning_rate).minimize(autoencoder_loss)
-                #train = tf.train.AdamOptimizer(learning_rate).minimize(total_loss)
+                    train_autoencode = tf.train.MomentumOptimizer(learning_rate,momentum=self.rms_decay).minimize(autoencoder_loss)
+
 
 
                 saver = tf.train.Saver()
 
-                if train_type == "domain":
 
-                    total_batch = int(len(self.source_target_combined_2()) / self.batch_size)
-                    total_batch_auto =total_batch
-                elif train_type == "single":
-                    total_batch = int(len(self.source_data()) / self.batch_size)
-                    total_batch_auto = total_batch
 
 
                 merged_summary = tf.summary.merge_all()
@@ -97,10 +100,10 @@ class Main_run(Dataset_Import):
 
 
 
-                    for encoder_epoch in range(self.auto_encode_epoch):
+                    for encoder_epoch in range(2):
 
                       start_time = time.time()
-                      for i in range(total_batch_auto):
+                      for i in range(2):
 
                             feed=self.next_batch_combined_encoder(self.batch_size,train_type)
                             input_feed= [i for i in feed]
@@ -125,6 +128,15 @@ class Main_run(Dataset_Import):
 
                       # Save the final model
                     saver.save(encoder_sess, 'np_data/model_final')
+
+                    config = projector.ProjectorConfig()
+                    # One can add multiple embeddings.
+                    embedding = config.embeddings.add()
+
+                    # Link this tensor to its metadata(Labels) file
+
+
+                    projector.visualize_embeddings(sum_writer, config)
                     self.set_epoch=0
                     self.auto_shuffling_state=False
                     self.shu_control_state=False
@@ -142,7 +154,7 @@ class Main_run(Dataset_Import):
                     inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_grad = \
                         model.input_placeholder(self.image_size, self.img_channel, self.label_cnt)
 
-                    logits = model.inference(inputs, training, dropout_keep_prob, self.label_cnt)
+                    logits = model.vgg16(inputs, training, dropout_keep_prob, self.label_cnt)
 
                     accuracy = model.accuracy(logits, labels)
                     pred_loss = model.loss(logits, labels)
@@ -172,11 +184,11 @@ class Main_run(Dataset_Import):
                     # train = tf.train.AdamOptimizer(learning_rate).minimize(total_loss)
                     with tf.control_dependencies(update_ops):
                         # train = tf.train.AdamOptimizer(learning_rate).minimize(total_loss)
-                        train_op_trained = tf.train.RMSPropOptimizer(self.learning_rate_convlayer, self.rms_decay).minimize(total_loss,
-                                                                                                                            var_list=convolve_variables)
-                        train_op_untrained = tf.train.RMSPropOptimizer(self.learn_rate_fully_layer, self.rms_decay).minimize(total_loss,
-                                                                                                                             var_list=fully_variables)
-                        train_op = tf.group(train_op_trained, train_op_untrained)
+                        train_op_trained = tf.train.MomentumOptimizer(self.learning_rate_convlayer, self.rms_decay).minimize(total_loss)#var_list=convolve_variables
+
+                    train_op_untrained = tf.train.MomentumOptimizer(self.learn_rate_fully_layer, self.rms_decay).minimize(total_loss)# var_list=fully_variables
+
+                    train_op = tf.group(train_op_trained, train_op_untrained)
 
                     tr_merge_summary = tf.summary.merge_all()
 
@@ -197,20 +209,25 @@ class Main_run(Dataset_Import):
 
                     reader =NewCheckpointReader(latest_ckp)
                     var_to_shape_map = reader.get_variable_to_shape_map()
+
+                    for f in var_to_shape_map:
+                        print(f,end="\n")
+                        weight_r = tr_sess.run( ":".join([f, "0"]))
+                        print(weight_r,end="\n")
                     #load autoencoder pretrained weights and biase
-                    op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
+                    #op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
 
-
+                    exit(0)
 
 
                     print(" ", end="\n")
                     print("Initializing Class Training")
                     print(" ", end="\n")
 
-                    for epoch in range(self.training_epoch):
+                    for epoch in range(2):
 
                       start_time_2=time.time()
-                      for i in range(total_batch):
+                      for i in range(2):
 
                             source_feed=self.next_batch_combined(self.batch_size)
 
@@ -218,6 +235,7 @@ class Main_run(Dataset_Import):
                             data_source = np.array(data_source)
                             data_feed=list(data_source[0:, 0])
                             data_label=list(data_source[0:, 1])
+
 
 
 
@@ -239,7 +257,8 @@ class Main_run(Dataset_Import):
                                     [train_op, total_loss, accuracy,logits,
                                      tr_merge_summary],
                                     feed_dict=feed_dict_source_batch)
-
+                            #print(data_label)
+                            #print(acc_log)
                             print('Epoch %d/%d, batch %d/%d is finished!' % (epoch, self.training_epoch, i, total_batch))
 
                       tr_writer.add_summary(summary_out2,epoch)
@@ -365,14 +384,18 @@ class Main_run(Dataset_Import):
                       # end of validation batch
 
 
+def netTrain(net_type:str=None):
+    pass
+
 if __name__ == '__main__':
 
-  #try:
-  run_train = Main_run()
-  run_train.train(train_type="single", use_encoder_saver=True, use_train_saver=True)
+  try:
+   run_train = Main_run()
+   run_train.train(train_type="single", use_encoder_saver=False, use_train_saver=False)
 
-  #except Exception as ex:
-    #print("Exeception caught ",ex)
+  except Exception as ex:
+    print("Exeception caught ",ex)
+    raise
 
 
 

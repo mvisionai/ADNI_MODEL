@@ -45,7 +45,7 @@ class Dataset_Import(object):
         self.validation_dir =constants.validation_dir
         self.set_epoch=0
         self.set_checker=0
-
+        self.classify_group=constants.classify_group
         # Directory with our training AD dataset
         self.train_ad_dir =constants.train_ad_dir
 
@@ -145,19 +145,25 @@ class Dataset_Import(object):
 
     def convert_nii_to_image_data(self,nii_path):
         image_load = nib.load(nii_path, mmap=False)
-        img_data = img_to_array(image_load.get_data()[:, :, :, 0])
+
+        img_data = np.asarray(image_load.get_data()[:, :, :, 0])
+
+        #img_to_array
         determine_shape = np.resize(img_data, self.img_shape_tuple)
-        return normalise_zero_one(self.add_gaussian_noise(determine_shape))
+        #print("data",normalise_zero_one(determine_shape+ np.random.normal(0, 0.05, determine_shape.shape)))
+        return determine_shape
+        #normalise_zero_one(
         #determine_shape*(1./255)
 
-    def one_hot_encode(self,vec, vals=3):
+    def one_hot_encode(self,vec):
         '''
             For use to one-hot encode the 3- possible labels
             '''
-        n = len(vec)
-        out = np.zeros((n, vals))
-        out[range(n), vec] = 1
-        return out
+
+        n_classes=len(constants.classify_group)
+        return np.eye(n_classes)[vec]
+
+
 
     def get_nii_group(self,nii_path):
         img_label=nii_path
@@ -165,9 +171,9 @@ class Dataset_Import(object):
         if img_label=="AD":
             label=0
         elif img_label=="MCI":
-            label=1
-        elif img_label=="NC":
             label=2
+        elif img_label=="NC":
+            label=1
 
         return  label
 
@@ -182,23 +188,58 @@ class Dataset_Import(object):
         return source_label
 
     def all_source_data(self):
-        all_ad_train = self.read_directory_file(self.train_ad_dir, "AD",source=self.source)
-        all_mci_train = self.read_directory_file(self.train_mci_dir, "MCI",source=self.source)
-        all_nc_train = self.read_directory_file(self.train_nc_dir, "NC",source=self.source)
-        all_source = [img_path for i, img_path in enumerate(all_ad_train + all_mci_train + all_nc_train)]
-        all_source = np.array(all_source)
 
-        if self.shu_control_state == False:
+
+       if "AD" in constants.classify_group:
+          all_ad_train = self.read_directory_file(self.train_ad_dir, "AD",source=self.source)
+
+       if "MCI" in constants.classify_group:
+           all_mci_train = self.read_directory_file(self.train_mci_dir, "MCI",source=self.source)
+
+       if "NC" in constants.classify_group:
+         all_nc_train = self.read_directory_file(self.train_nc_dir, "NC",source=self.source)
+
+       data_feed=[]
+
+       for groups in constants.classify_group:
+           if groups=="AD":
+             data_feed=data_feed+all_ad_train
+           elif groups=="MCI":
+               data_feed = data_feed + all_mci_train
+           elif groups=="NC":
+               data_feed=data_feed + all_nc_train
+       all_source = [img_path for i, img_path in enumerate(data_feed)]
+       all_source = np.array(all_source)
+
+       if self.shu_control_state == False:
           self.set_random_seed(700)
-        else:
+       else:
           self.set_random_seed((self.i+1)*self.set_epoch*40)
-        return  self.shuffle(all_source)
+
+       return  self.shuffle(all_source)
 
     def all_target_data(self):
-        all_ad_target = self.read_directory_file(self.validation_ad_dir, "AD", source=self.target)
-        all_mci_target = self.read_directory_file(self.validation_mci_dir, "MCI", source=self.target)
-        all_nc_target = self.read_directory_file(self.validation_nc_dir, "NC", source=self.target)
-        all_target = [img_path for i, img_path in enumerate(all_ad_target + all_mci_target + all_nc_target)]
+
+        if "AD" in constants.classify_group:
+            all_ad_target = self.read_directory_file(self.validation_ad_dir, "AD", source=self.target)
+
+        if "MCI" in constants.classify_group:
+            all_mci_target = self.read_directory_file(self.validation_mci_dir, "MCI", source=self.target)
+
+        if "NC" in constants.classify_group:
+            all_nc_target = self.read_directory_file(self.validation_nc_dir, "NC", source=self.target)
+
+        data_feed = []
+
+        for groups in constants.classify_group:
+            if groups == "AD":
+                data_feed = data_feed + all_ad_target
+            elif groups == "MCI":
+                data_feed = data_feed + all_mci_target
+            elif groups == "NC":
+                data_feed = data_feed + all_nc_target
+
+        all_target = [img_path for i, img_path in enumerate(data_feed)]
         all_target = np.array(all_target)
         #all_target = np.take(all_target, np.random.permutation(len(all_target)), axis=0, out=all_target)
 
@@ -415,7 +456,10 @@ class Dataset_Import(object):
                                  (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_channel)),self.all_source_labels(batch_data[c]),self.encode_domain_labels(batch_data[c])
         elif len(self.img_shape_tuple) == 3:
             for c in range(batch_size):
-                 yield np.resize(self.convert_batch_to_img_data(batch_data[c]),
+
+
+
+                yield np.resize(self.convert_batch_to_img_data(batch_data[c]),
                                 (self.img_shape_tuple[0], self.img_shape_tuple[1], self.img_shape_tuple[2], self.img_channel)),self.all_source_labels(batch_data[c]),self.encode_domain_labels(batch_data[c])
 
 
@@ -439,21 +483,23 @@ class Dataset_Import(object):
 
 
     def all_source_labels(self, batch_data):
-        data=batch_data
+        data = batch_data
         col = 1
-        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]),3)
+        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]))
+        #self.one_hot_encode([ int((data[i][col])) for i in range(len(data))])
+        #print("valie",np.hstack([int(data[col])]))
         return encoded_label[0]
 
     def encode_domain_labels(self,batch_data):
         data = batch_data
         col = 2
-        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]),2)
+        encoded_label = self.one_hot_encode(np.hstack([int(data[col])]))
         return encoded_label[0]
 
     def all_encoded_labels(self, batch_data):
         data= batch_data
         col = 1
-        encoded_label = self.one_hot_encode(np.hstack([ int((data[i][col])) for i in range(len(data))]),3)
+        encoded_label = self.one_hot_encode([int(data[col])])
         #self.one_hot_encode(np.hstack([(data[i][col]) for i in range(len(data))]), 3)
         return encoded_label
 
@@ -551,7 +597,7 @@ class Dataset_Import(object):
     def sample_yaml(self):
         pass
 
-    def add_gaussian_noise(self,image, sigma=0.05):
+    def add_gaussian_noise(self,image, sigma=0.07,shape=None):
         """
         Add Gaussian noise to an image
         Args:
@@ -562,7 +608,7 @@ class Dataset_Import(object):
             np.ndarray: same as image but with added offset to each channel
         """
 
-        image += np.random.normal(0, sigma, image.shape)
+        image += np.random.normal(0, sigma,shape)
         return image
     def set_random_seed(self,seed_v):
         np.random.seed(seed_v)
@@ -596,11 +642,25 @@ class Dataset_Import(object):
         r = requests.get('https://frightanic.com/goodies_content/docker-names.php')
         print(r.text.rstrip())
 
-#if __name__=="__main__"    :
+if __name__=="__main__"    :
 
-   #try:
-        #dataset_feed=Dataset_Import()
-       # print(dataset_feed.target_validation_data())
+   try:
+        dataset_feed=Dataset_Import()
+        #print(dataset_feed.all_source_data())
+        #print(dataset_feed.all_source_data())
+        #print(dataset_feed.encode_domain_labels(dataset_feed.all_source_data()[0]))
+        #print(dataset_feed.encode_domain_labels(dataset_feed.all_source_data()[0]).shape)
+
+        # source_feed = dataset_feed.next_batch_combined(2)
+        #
+        # data_source = [data for data in source_feed]
+        # data_source = np.array(data_source)
+        # data_feed = list(data_source[0:, 0])
+        # data_label = list(data_source[0:, 1])
+        # print(data_label)
+
+
+        #print(dataset_feed.target_validation_data())
         #dataset_feed.load_dataset()
         #dataset_feed.sample_yaml()
         #dataset_feed.url_requests()
@@ -634,8 +694,9 @@ class Dataset_Import(object):
 
 
 
-  # except Exception as ex:
-      # print(ex)
+   except Exception as ex:
+      print(ex)
+      raise
 
 
 
