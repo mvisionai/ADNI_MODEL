@@ -308,13 +308,10 @@ class Dataset_Import(object):
         self.pic_index += 8
         #[self.pic_index - 8:self.pic_index]
         next_ad_pix = [fname
-                        for fname in self.read_directory_file(self.validation_ad_dir,"AD")]
-        next_mci_pix = [fname
-                        for fname in self.read_directory_file(self.validation_mci_dir,"MCI")]
-        next_nc_pix = [fname
-                        for fname in self.read_directory_file(self.validation_nc_dir,"NC")]
+                        for fname in self.read_directory_file(self.train_mci_dir, "AD",source=self.source)]
 
-        for i, img_path in enumerate(next_nc_pix+next_ad_pix  + next_mci_pix):
+
+        for i, img_path in enumerate(next_ad_pix):
             # Set up subplot; subplot indices start at 1
             #sp = plt.subplot(self.nrows, self.ncols, i + 1)
             #sp.axis('Off')  # Don't show axes (or gridlines)
@@ -323,16 +320,16 @@ class Dataset_Import(object):
             image_load = nib.load(img_path[0],
                                   mmap=False)
             loads = img_to_array(image_load.get_data()[:, :, :, 0])
-            data=np.resize(loads,(270,270,270))
-            print(data.shape)
+
+            print(loads.shape)
             break
 
-            #print(data_normalise.shape)
-            #plt.imshow(data_normalise[:, :, 210], cmap='gray')
-            #img = mpimg.imread(img_path)
-            #plt.imshow(img)
 
-        #plt.show()
+        plt.imshow(loads[:, :, 5], cmap='gray')
+        #img = mpimg.imread(img_path)
+        #plt.imshow(img)
+
+        plt.show()
 
     def next_batch_source_path(self, batch_size):
         return self.source_training_data()[self.i:self.i + batch_size]
@@ -646,6 +643,7 @@ if __name__=="__main__"    :
 
    try:
         dataset_feed=Dataset_Import()
+        dataset_feed.show_image()
         #print(dataset_feed.all_source_data())
         #print(dataset_feed.all_source_data())
         #print(dataset_feed.encode_domain_labels(dataset_feed.all_source_data()[0]))
