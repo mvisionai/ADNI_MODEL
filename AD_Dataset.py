@@ -13,6 +13,7 @@ import numpy as np
 import AD_Constants as constants
 import requests
 from numpy import random
+import  time
 from tensorflow.contrib.keras.api.keras.preprocessing.image import ImageDataGenerator,img_to_array, load_img,array_to_img
 
 
@@ -643,55 +644,11 @@ if __name__=="__main__"    :
 
    try:
         dataset_feed=Dataset_Import()
-        dataset_feed.show_image()
-        #print(dataset_feed.all_source_data())
-        #print(dataset_feed.all_source_data())
-        #print(dataset_feed.encode_domain_labels(dataset_feed.all_source_data()[0]))
-        #print(dataset_feed.encode_domain_labels(dataset_feed.all_source_data()[0]).shape)
 
-        # source_feed = dataset_feed.next_batch_combined(2)
-        #
-        # data_source = [data for data in source_feed]
-        # data_source = np.array(data_source)
-        # data_feed = list(data_source[0:, 0])
-        # data_label = list(data_source[0:, 1])
-        # print(data_label)
+        start =time.time()
+        dataset_feed.statistics()
 
-
-        #print(dataset_feed.target_validation_data())
-        #dataset_feed.load_dataset()
-        #dataset_feed.sample_yaml()
-        #dataset_feed.url_requests()
-        #lens=int(len(dataset_feed.source_validation_data())/5)
-        #lent=int(len(dataset_feed.target_validation_data())/5)
-        #maxc=max(lens,lent)
-
-
-
-
-        #validation_target_dataset, valid_target_label, valid_target_d_label = self.convert_validation_target_data()
-        #dataset_feed.statistics()
-        #dataset_feed.show_image()
-        #dataset_feed.statistics()
-        #dataset_feed.cnn_layer()
-        #dataset_feed.save_training_data()
-        #dataset_feed.all_training_data()
-        #print(dataset_feed. convert_validation_source_data()[1])
-        #print("te", dataset_feed.source_target_combined_2()[:, 0][:2])
-        #print("tr",dataset_feed.source_target_combined()[:,0][:2])
-
-
-        #print(dataset_feed.next_batch_source(5))
-        # i=0
-        # for data in dataset_feed.all_target_data():
-        #     print(data[0])
-        #     data=dataset_feed.convert_nii_to_image_data(data[0])
-        #     i=i+1
-        #     print(i)
-
-
-
-
+        print("ended ",time.time()-start)
    except Exception as ex:
       print(ex)
       raise

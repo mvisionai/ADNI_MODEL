@@ -1,6 +1,6 @@
 import yaml
 import  os
-main_image_directory = "M:\LabWork\ADNI_STATISTICS\ADNI"
+main_image_directory = "M:\projects\ADNI"
 chosen_epi_format=["MP-RAGE","MPRAGE"]
 strict_match=True
 yaml_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),"init_yaml.yml")

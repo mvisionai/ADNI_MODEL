@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from tensorflow.contrib.keras.api.keras import backend as K
-import ops as op_linker
+from ARCH_3D import ops as op_linker
 
 shape_to_return=None
 d_W_fc0=None

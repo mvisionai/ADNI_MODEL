@@ -8,12 +8,14 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
     input_size = inputs.get_shape().as_list()[-1]
 
     #init_weight_var=tf.random_normal_initializer(stddev=0.02)
-    conv_weights =tf.get_variable(name='weights', shape=[kernel_size, kernel_size, kernel_size, input_size, output_num],initializer=tf.contrib.layers.xavier_initializer(),trainable=True)
-    tf.summary.histogram("weight_value",conv_weights)
-    conv_biases = tf.get_variable(name='net_biases',
-                                   shape=[output_num],initializer= tf.constant_initializer(init_bias),trainable=True)
-    tf.summary.histogram("bias_value",conv_biases )
-    conv_layer = tf.nn.conv3d(inputs, conv_weights, [1, stride_size, stride_size, stride_size, 1], padding=conv_padding)
+    #conv_weights =tf.get_variable(name='weights', shape=[kernel_size, kernel_size, kernel_size, input_size, output_num],initializer=tf.contrib.layers.xavier_initializer(),trainable=True)
+    #tf.summary.histogram("weight_value",conv_weights)
+    #conv_biases = tf.get_variable(name='net_biases',
+                                   #shape=[output_num],initializer= tf.constant_initializer(init_bias),trainable=True)
+    #tf.summary.histogram("bias_value",conv_biases )
+    conv_layer = tf.layers.Conv3D(inputs=inputs, filters=conv_weights,stride_size= [stride_size, stride_size, stride_size], padding=conv_padding,kernel_initializer=tf.contrib.layers.xavier_initializer(),
+    bias_initializer=tf.constant_initializer(init_bias))
+
     conv_layer = tf.nn.bias_add(conv_layer, conv_biases)
     if activation_func:
         conv_layer = activation_func(conv_layer)

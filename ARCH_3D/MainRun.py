@@ -17,7 +17,7 @@ class Main_run(Dataset_Import):
 
 
     def __init__(self):
-        super().__init__()
+        super(Dataset_Import,self).__init__()
         self.now = datetime.now()
         self.training_epoch = 500
         self.auto_encode_epoch = 500
@@ -391,11 +391,12 @@ if __name__ == '__main__':
 
   try:
    run_train = Main_run()
-   run_train.train(train_type="single", use_encoder_saver=False, use_train_saver=False)
+   run_train.train(train_type="single", use_encoder_saver=True, use_train_saver=False)
 
   except Exception as ex:
     print("Exeception caught ",ex)
     raise
+
 
 
 
