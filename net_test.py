@@ -41,7 +41,7 @@ class Main_run(Dataset_Import):
 
     def train(self, train_type: str="domain", use_encoder_saver: bool=False, use_train_saver: bool=False):
 
-
+            total_batch=5
             g2 = tf.Graph()
             # Merge all summaries together
 
@@ -49,8 +49,8 @@ class Main_run(Dataset_Import):
             with g2.as_default() as g3:
 
 
-                    inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_grad = \
-                        model.input_placeholder(self.image_size, self.img_channel, self.label_cnt)
+                    inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_grad =model.input_placeholder(self.image_size, self.img_channel, self.label_cnt)
+
 
                     logits = model.vgg16(inputs, training, dropout_keep_prob, self.label_cnt)
 
@@ -64,7 +64,7 @@ class Main_run(Dataset_Import):
                                            for fc_var in
                                            constant.not_trained if fc_var != "domain_predictor"]
 
-                    convolve_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+con_var) for con_var in
+                        convolve_variables = [tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convolution/"+con_var) for con_var in
                                           constant.pre_trained]
 
 
@@ -87,9 +87,10 @@ class Main_run(Dataset_Import):
 
             with tf.Session(graph=g3) as  tr_sess:
 
+                init = tf.global_variables_initializer()
+                tr_sess.run(init)
+
                 if use_train_saver == False:
-
-
 
 
                     print(" ", end="\n")
@@ -122,7 +123,7 @@ class Main_run(Dataset_Import):
                             #print(acc_log)
                             print('Epoch %d/%d, batch %d/%d is finished!' % (epoch, self.training_epoch, i, total_batch))
 
-                      tr_writer.add_summary(summary_out2,epoch)
+
 
 
 
@@ -150,8 +151,6 @@ class Main_run(Dataset_Import):
 
                 if use_train_saver==True:
                     print("Validating Data from Saved Model ",end="\n")
-                    train_saver = tf.train.Saver()
-                    train_saver.restore(tr_sess,  tf.train.latest_checkpoint('train_session'))
 
 
 

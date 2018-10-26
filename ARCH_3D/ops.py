@@ -3,9 +3,9 @@ import  numpy as np
 import  AD_Constants as constants
 
 
-def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_padding='SAME', stddev=0.01, activation_func=tf.nn.relu):
+def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_padding='SAME', stddev=0.01, activation_func=tf.nn.relu,weights=None):
 
-    input_size = inputs.get_shape().as_list()[-1]
+    #input_size = inputs.get_shape().as_list()[-1]
 
     #init_weight_var=tf.random_normal_initializer(stddev=0.02)
     #conv_weights =tf.get_variable(name='weights', shape=[kernel_size, kernel_size, kernel_size, input_size, output_num],initializer=tf.contrib.layers.xavier_initializer(),trainable=True)
@@ -13,10 +13,10 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
     #conv_biases = tf.get_variable(name='net_biases',
                                    #shape=[output_num],initializer= tf.constant_initializer(init_bias),trainable=True)
     #tf.summary.histogram("bias_value",conv_biases )
-    conv_layer = tf.layers.Conv3D(inputs=inputs, filters=conv_weights,stride_size= [stride_size, stride_size, stride_size], padding=conv_padding,kernel_initializer=tf.contrib.layers.xavier_initializer(),
+    conv_layer = tf.layers.conv3d(inputs=inputs,kernel_size=[kernel_size,kernel_size,kernel_size], filters=output_num,strides= [stride_size, stride_size, stride_size], padding=conv_padding,kernel_initializer=tf.contrib.layers.xavier_initializer(),
     bias_initializer=tf.constant_initializer(init_bias))
 
-    conv_layer = tf.nn.bias_add(conv_layer, conv_biases)
+    #conv_layer = tf.nn.bias_add(conv_layer, conv_biases)
     if activation_func:
         conv_layer = activation_func(conv_layer)
     return conv_layer
@@ -34,8 +34,6 @@ def deconv(inputs, kernel_size, output_num, stride_size=1,conv_padding='SAME', s
         name='de_weights')
     dconv_layer = tf.nn.conv3d_transpose(inputs, dconv_weights,output_shape=[batch_size,depth,height,width,output_num], strides=[1, stride_size, stride_size, stride_size, 1], padding=conv_padding)
     #dconv_layer = tf.layers.conv3d_transpose(inputs,output_num,kernel_size,stride_size,padding=conv_padding)
-
-    #print("dec ", dconv_layer.get_shape())
 
 
     return dconv_layer

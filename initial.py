@@ -34,23 +34,19 @@ def segment_image(t_1):
     total_time = t1 - t0
     print('Total time:' + str(total_time))
 
-    fig = plt.figure()
-    a = fig.add_subplot(1, 3, 1)
+
     img_ax = np.rot90(PVE[..., 89, 0])
-    imgplot = plt.imshow(img_ax, cmap="gray")
-    a.axis('off')
-    a.set_title('CSF')
-    a = fig.add_subplot(1, 3, 2)
+    plt.imsave('csf.png', img_ax, cmap='gray')
+
+
+
     img_cor = np.rot90(PVE[:, :, 89, 1])
-    imgplot = plt.imshow(img_cor, cmap="gray")
-    a.axis('off')
-    a.set_title('Gray Matter')
-    a = fig.add_subplot(1, 3, 3)
+    plt.imsave('gray.png',img_cor, cmap='gray')
+
+
     img_cor = np.rot90(PVE[:, :, 89, 2])
-    imgplot = plt.imshow(img_cor, cmap="gray")
-    a.axis('off')
-    a.set_title('White Matter')
-    plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
+    plt.imsave('white.png', img_cor, cmap='gray')
+
     plt.show()
 
 

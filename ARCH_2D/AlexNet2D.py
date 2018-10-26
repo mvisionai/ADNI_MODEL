@@ -1,120 +1,209 @@
+
+
+# Start TensorFlow InteractiveSession
+
+import input_3Dimage
+
 import tensorflow as tf
-from AD_Dataset import  Dataset_Import
-import  AD_Constants as constants
 
-data_feed=Dataset_Import()
-n_inputs = 256 * 256 * 3 # number of input vector elements i.e. pixels per training example
-n_classes =3 # number of classes to be classified
-
-# input and output vector placeholders
-x = tf.placeholder(tf.float32, [None,constants.img_shape_tuple[0],constants.img_shape_tuple[1],constants.img_channel])
-y = tf.placeholder(tf.float32, [None, n_classes])
-
-# fully connected layer
-fc_layer = lambda x, W, b, name=None: tf.nn.bias_add(tf.matmul(x, W), b)
-
-def alex_net(img, weights, biases):
-
-    # reshape the input image vector to 227 x 227 x 3 dimensions
-    img = tf.reshape(img, [-1, 110,5000, 3])
-
-    # 1st convolutional layer
-    conv1 = tf.nn.conv2d(img, weights["wc1"], strides=[1, 4, 4, 1], padding="SAME", name="conv1")
-    conv1 = tf.nn.bias_add(conv1, biases["bc1"])
-    conv1 = tf.nn.relu(conv1)
-    conv1 = tf.nn.local_response_normalization(conv1, depth_radius=5.0, bias=2.0, alpha=1e-4, beta=0.75)
-    conv1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-
-    # 2nd convolutional layer
-    conv2 = tf.nn.conv2d(conv1, weights["wc2"], strides=[1, 1, 1, 1], padding="SAME", name="conv2")
-    conv2 = tf.nn.bias_add(conv2, biases["bc2"])
-    conv2 = tf.nn.relu(conv2)
-    conv2 = tf.nn.local_response_normalization(conv2, depth_radius=5.0, bias=2.0, alpha=1e-4, beta=0.75)
-    conv2 = tf.nn.max_pool(conv2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-
-    # 3rd convolutional layer
-    conv3 = tf.nn.conv2d(conv2, weights["wc3"], strides=[1, 1, 1, 1], padding="SAME", name="conv3")
-    conv3 = tf.nn.bias_add(conv3, biases["bc3"])
-    conv3 = tf.nn.relu(conv3)
-
-    # 4th convolutional layer
-    conv4 = tf.nn.conv2d(conv3, weights["wc4"], strides=[1, 1, 1, 1], padding="SAME", name="conv4")
-    conv4 = tf.nn.bias_add(conv4, biases["bc4"])
-    conv4 = tf.nn.relu(conv4)
-
-    # 5th convolutional layer
-    conv5 = tf.nn.conv2d(conv4, weights["wc5"], strides=[1, 1, 1, 1], padding="SAME", name="conv5")
-    conv5 = tf.nn.bias_add(conv5, biases["bc5"])
-    conv5 = tf.nn.relu(conv5)
-    conv5 = tf.nn.max_pool(conv5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-
-    # stretching out the 5th convolutional layer into a long n-dimensional tensor
-
-    shape = [-1, weights['wf1'].get_shape().as_list()[0]]
-    flatten = tf.reshape(conv5, shape)
-
-    # 1st fully connected layer
-    fc1 = fc_layer(flatten, weights["wf1"], biases["bf1"], name="fc1")
-    fc1 = tf.nn.tanh(fc1)
-    fc1 = tf.nn.dropout(fc1, keep_prob=0.5)
-
-    # 2nd fully connected layer
-    fc2 = fc_layer(fc1, weights["wf2"], biases["bf2"], name="fc2")
-    fc2 = tf.nn.tanh(fc2)
-    fc2 = tf.nn.dropout(fc2, keep_prob=0.5)
-
-    # 3rd fully connected layer
-    fc3 = fc_layer(fc2, weights["wf3"], biases["bf3"], name="fc3")
-    fc3 = tf.nn.softmax(fc3)
-    print("Graph built")
-    # Return the complete AlexNet model
-    return fc3
-
-# Weight parameters as devised in the original research paper
-weights = {
-    "wc1": tf.Variable(tf.truncated_normal([7, 7, 3, 96],     stddev=0.01), name="wc1"),
-    "wc2": tf.Variable(tf.truncated_normal([5, 5, 96, 256],     stddev=0.01), name="wc2"),
-    "wc3": tf.Variable(tf.truncated_normal([3, 3, 256, 384],    stddev=0.01), name="wc3"),
-    "wc4": tf.Variable(tf.truncated_normal([3, 3, 384, 384],    stddev=0.01), name="wc4"),
-    "wc5": tf.Variable(tf.truncated_normal([3, 3, 384, 256],    stddev=0.01), name="wc5"),
-    "wf1": tf.Variable(tf.truncated_normal([396800*2, 4096],   stddev=0.01), name="wf1"),
-    "wf2": tf.Variable(tf.truncated_normal([4096, 4096],        stddev=0.01), name="wf2"),
-    "wf3": tf.Variable(tf.truncated_normal([4096, n_classes],   stddev=0.01), name="wf3")
-#28*28*
-}
-
-# Bias parameters as devised in the original research paper
-biases = {
-    "bc1": tf.Variable(tf.constant(0.0, shape=[96]), name="bc1"),
-    "bc2": tf.Variable(tf.constant(1.0, shape=[256]), name="bc2"),
-    "bc3": tf.Variable(tf.constant(0.0, shape=[384]), name="bc3"),
-    "bc4": tf.Variable(tf.constant(1.0, shape=[384]), name="bc4"),
-    "bc5": tf.Variable(tf.constant(1.0, shape=[256]), name="bc5"),
-    "bf1": tf.Variable(tf.constant(1.0, shape=[4096]), name="bf1"),
-    "bf2": tf.Variable(tf.constant(1.0, shape=[4096]), name="bf2"),
-    "bf3": tf.Variable(tf.constant(1.0, shape=[n_classes]), name="bf3")
-}
-
-y_pred=alex_net(x,weights,biases)
-
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=y_pred))
-# Optimizer
-optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-train = optimizer.minimize(cross_entropy)
-
-init = tf.global_variables_initializer()
-
-steps = 50
-with tf.Session() as sess:
-    sess.run(init)
-    for i in range(steps):
-        batch_x, batch_y,_ =data_feed.next_batch_source(10)
-        matches = tf.equal(tf.argmax(y_pred, 1), tf.argmax(batch_y, 1))
-        acc = tf.reduce_mean(tf.cast(matches, tf.float32))
-        _,accuracy=sess.run([train,acc], feed_dict={x: batch_x,y:batch_y})
-        print("ON Step : {}".format(i))
+sess = tf.InteractiveSession()
 
 
-        print("Accuracy :",accuracy)
-        #print(sess.run(acc, feed_dict={x: mnst.test.images, y_true: mnst.test.labels, hold_prob: 1.0}))
-        print("\n")
+width = 256
+
+height = 256
+
+depth = 40
+
+nLabel = 4
+
+
+# Placeholders (MNIST image:28x28pixels=784, label=10)
+
+x = tf.placeholder(tf.float32, shape=[None, width*height*depth]) # [None, 28*28]
+
+y_ = tf.placeholder(tf.float32, shape=[None, nLabel])  # [None, 10]
+
+
+
+## Weight Initialization
+
+# Create lots of weights and biases & Initialize with a small positive number as we will use ReLU
+
+def weight_variable(shape):
+
+  initial = tf.truncated_normal(shape, stddev=0.1)
+
+  return tf.Variable(initial)
+
+
+
+def bias_variable(shape):
+
+  initial = tf.constant(0.1, shape=shape)
+
+  return tf.Variable(initial)
+
+
+
+## Convolution and Pooling
+
+# Convolution here: stride=1, zero-padded -> output size = input size
+
+def conv3d(x, W):
+
+  return tf.nn.conv3d(x, W, strides=[1, 1, 1, 1, 1], padding='SAME') # conv2d, [1, 1, 1, 1]
+
+
+
+# Pooling: max pooling over 2x2 blocks
+
+def max_pool_2x2(x):  # tf.nn.max_pool. ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1]
+
+  return tf.nn.max_pool3d(x, ksize=[1, 4, 4, 4, 1], strides=[1, 4, 4, 4, 1], padding='SAME')
+
+
+
+
+
+## First Convolutional Layer
+
+# Conv then Max-pooling. 1st layer will have 32 features for each 5x5 patch. (1 feature -> 32 features)
+
+W_conv1 = weight_variable([5, 5, 5, 1, 32])  # shape of weight tensor = [5,5,1,32]
+
+b_conv1 = bias_variable([32])  # bias vector for each output channel. = [32]
+
+
+
+# Reshape 'x' to a 4D tensor (2nd dim=image width, 3rd dim=image height, 4th dim=nColorChannel)
+
+x_image = tf.reshape(x, [-1,width,height,depth,1]) # [-1,28,28,1]
+
+print(x_image.get_shape) # (?, 256, 256, 40, 1)  # -> output image: 28x28 x1
+
+
+
+# x_image * weight tensor + bias -> apply ReLU -> apply max-pool
+
+h_conv1 = tf.nn.relu(conv3d(x_image, W_conv1) + b_conv1)  # conv2d, ReLU(x_image * weight + bias)
+
+print(h_conv1.get_shape) # (?, 256, 256, 40, 32)  # -> output image: 28x28 x32
+
+h_pool1 = max_pool_2x2(h_conv1)  # apply max-pool
+
+print(h_pool1.get_shape) # (?, 128, 128, 20, 32)  # -> output image: 14x14 x32
+
+
+
+
+
+## Second Convolutional Layer
+
+# Conv then Max-pooling. 2nd layer will have 64 features for each 5x5 patch. (32 features -> 64 features)
+
+W_conv2 = weight_variable([5, 5, 5, 32, 64]) # [5, 5, 32, 64]
+
+b_conv2 = bias_variable([64]) # [64]
+
+
+
+h_conv2 = tf.nn.relu(conv3d(h_pool1, W_conv2) + b_conv2)  # conv2d, .ReLU(x_image * weight + bias)
+
+print(h_conv2.get_shape) # (?, 128, 128, 20, 64)  # -> output image: 14x14 x64
+
+h_pool2 = max_pool_2x2(h_conv2)  # apply max-pool
+
+print(h_pool2.get_shape) # (?, 64, 64, 10, 64)    # -> output image: 7x7 x64
+
+
+
+
+
+## Densely Connected Layer (or fully-connected layer)
+
+# fully-connected layer with 1024 neurons to process on the entire image
+
+W_fc1 = weight_variable([16*16*3*64, 1024])  # [7*7*64, 1024]
+
+b_fc1 = bias_variable([1024]) # [1024]]
+
+
+
+h_pool2_flat = tf.reshape(h_pool2, [-1, 16*16*3*64])  # -> output image: [-1, 7*7*64] = 3136
+
+print(h_pool2_flat.get_shape)  # (?, 2621440)
+
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)  # ReLU(h_pool2_flat x weight + bias)
+
+print(h_fc1.get_shape) # (?, 1024)  # -> output: 1024
+
+
+
+## Dropout (to reduce overfitting; useful when training very large neural network)
+
+# We will turn on dropout during training & turn off during testing
+
+keep_prob = tf.placeholder(tf.float32)
+
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+
+print(h_fc1_drop.get_shape)  # -> output: 1024
+
+
+
+## Readout Layer
+
+W_fc2 = weight_variable([1024, nLabel]) # [1024, 10]
+
+b_fc2 = bias_variable([nLabel]) # [10]
+
+
+
+y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+
+print(y_conv.get_shape)  # -> output: 10
+
+
+
+## Train and Evaluate the Model
+
+# set up for optimization (optimizer:ADAM)
+
+cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
+
+train_step = tf.train.AdamOptimizer(1e-3).minimize(cross_entropy)  # 1e-4
+
+correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
+
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+
+
+sess.run(tf.global_variables_initializer())
+
+
+
+# Include keep_prob in feed_dict to control dropout rate.
+
+for i in range(100):
+
+    batch = get_data_MRI(sess,'train',20)
+
+    # Logging every 100th iteration in the training process.
+
+    if i%5 == 0:
+
+        train_accuracy = accuracy.eval(feed_dict={x:batch[0], y_: batch[1], keep_prob: 1.0})
+
+        print("step %d, training accuracy %g"%(i, train_accuracy))
+
+    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
+
+
+# Evaulate our accuracy on the test data
+
+testset = get_data_MRI(sess,'test',30)
+
+print("test accuracy %g"%accuracy.eval(feed_dict={x: testset[0], y_: teseset[1], keep_prob: 1.0}))

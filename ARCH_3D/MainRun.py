@@ -17,7 +17,7 @@ class Main_run(Dataset_Import):
 
 
     def __init__(self):
-        super(Dataset_Import,self).__init__()
+        super().__init__()
         self.now = datetime.now()
         self.training_epoch = 500
         self.auto_encode_epoch = 500
@@ -100,10 +100,10 @@ class Main_run(Dataset_Import):
 
 
 
-                    for encoder_epoch in range(2):
+                    for encoder_epoch in range(5):
 
                       start_time = time.time()
-                      for i in range(2):
+                      for i in range(5):
 
                             feed=self.next_batch_combined_encoder(self.batch_size,train_type)
                             input_feed= [i for i in feed]
@@ -151,8 +151,8 @@ class Main_run(Dataset_Import):
             with g2.as_default() as g3:
 
 
-                    inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_grad = \
-                        model.input_placeholder(self.image_size, self.img_channel, self.label_cnt)
+                    inputs, labels, training, dropout_keep_prob, learning_rate, domain_label, flip_grad =  model.input_placeholder(self.image_size, self.img_channel, self.label_cnt)
+
 
                     logits = model.vgg16(inputs, training, dropout_keep_prob, self.label_cnt)
 
@@ -193,7 +193,7 @@ class Main_run(Dataset_Import):
                     tr_merge_summary = tf.summary.merge_all()
 
 
-            tf.reset_default_graph()
+           # tf.reset_default_graph()
 
             with tf.Session(graph=g3) as  tr_sess:
 
@@ -217,7 +217,7 @@ class Main_run(Dataset_Import):
                     #load autoencoder pretrained weights and biase
                     #op_linker.load_initial_weights(tr_sess, var_to_shape_map, use_pretrain=True)
 
-                    exit(0)
+                    #exit(0)
 
 
                     print(" ", end="\n")
@@ -391,7 +391,7 @@ if __name__ == '__main__':
 
   try:
    run_train = Main_run()
-   run_train.train(train_type="single", use_encoder_saver=True, use_train_saver=False)
+   run_train.train(train_type="single", use_encoder_saver=False, use_train_saver=False)
 
   except Exception as ex:
     print("Exeception caught ",ex)
